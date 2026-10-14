@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#08090c">
+<title>Daily Ops</title>
+<style>
+:root{
+  --bg:#08090c; --panel:#11141a; --raised:#181c24; --line:#242a35;
+  --ink:#eef0f4; --muted:#8a91a0;
+  --em:#12f7a4; --blue:#2fd3ff; --amber:#ffb84d; --violet:#b389ff; --mag:#ff5ec4; --red:#ff5b6e;
+  --mono:ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.4;color-scheme:dark}
+body{background-image:linear-gradient(rgba(47,211,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(47,211,255,.03) 1px,transparent 1px);background-size:34px 34px;min-height:100vh}
+#app{max-width:520px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 14px) 16px calc(96px + env(safe-area-inset-bottom,0px))}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
+input,textarea,select{font:inherit;color:var(--ink);background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:12px 14px;outline:none;width:100%}
+input:focus,textarea:focus,select:focus{border-color:var(--blue)}
+input[type=time]{width:auto;min-width:130px;font-family:var(--mono);font-weight:600}
+input[type=number]{width:110px;font-family:var(--mono);font-weight:600;text-align:center}
+textarea{resize:none}
+h1,h2,h3{margin:0}
+.hide{display:none!important}
+
+/* header */
+.top{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px}
+.hello{font-size:22px;font-weight:700}
+.date{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:2px;letter-spacing:.04em}
+.page-title{font-family:var(--mono);font-size:20px;font-weight:700;margin:0 0 4px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 14px}
+
+/* cards */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+.big{font-size:20px;font-weight:700;line-height:1.3}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 18px;border-radius:14px;font-weight:700;background:var(--raised);border:1px solid var(--line)}
+.btn:active{transform:scale(.97)}
+.primary{background:var(--em);color:#04120c;border-color:var(--em)}
+.danger{color:var(--red);border-color:rgba(255,91,110,.4);background:rgba(255,91,110,.08)}
+.block{width:100%}
+.row{display:flex;gap:10px;align-items:center}
+.row.between{justify-content:space-between}
+.link{color:var(--blue);font-weight:600;font-size:14px}
+
+/* now card */
+.now{border-color:rgba(18,247,164,.35);background:linear-gradient(180deg,rgba(18,247,164,.07),var(--panel))}
+.now.sleep{border-color:rgba(179,137,255,.4);background:linear-gradient(180deg,rgba(179,137,255,.08),var(--panel))}
+.dots{display:flex;gap:6px;margin:12px 0 14px}
+.dots i{flex:1;height:5px;border-radius:3px;background:var(--line)}
+.dots i.on{background:var(--em)}
+.dots i.cur{background:var(--amber)}
+
+/* water */
+.ring-wrap{position:relative;width:220px;height:220px;margin:4px auto 14px}
+.ring{width:220px;height:220px}
+.ring-bg{fill:none;stroke:var(--line);stroke-width:14}
+.ring-fg{fill:none;stroke:var(--blue);stroke-width:14;stroke-linecap:round;transition:stroke-dashoffset .6s ease}
+.ring-fg.full{stroke:var(--em)}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-center .ml{font-family:var(--mono);font-size:44px;font-weight:800;line-height:1}
+.ring-center .of{font-family:var(--mono);font-size:13px;color:var(--muted);margin-top:4px}
+.ring-center .pct{font-family:var(--mono);font-size:13px;color:var(--blue);margin-top:6px}
+.cup-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:14px;padding:16px;border-radius:18px;background:var(--blue);color:#03141a;font-weight:800;border:0;box-shadow:0 0 24px rgba(47,211,255,.25)}
+.cup-btn:active{transform:scale(.97)}
+.cup-btn .cup{font-size:34px;line-height:1}
+.cup-btn b{display:block;font-size:22px;font-family:var(--mono)}
+.cup-btn small{display:block;font-size:12px;font-weight:600;opacity:.75}
+.cup-btn.pop{animation:pop .35s ease}
+@keyframes pop{40%{transform:scale(1.04)}}
+.pace{margin:12px 0 4px;text-align:center;font-size:14px;font-weight:600}
+.pace.ok{color:var(--em)} .pace.warn{color:var(--amber)}
+
+/* tasks */
+.prog{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin:6px 0 12px}
+.prog i{display:block;height:100%;background:var(--em);transition:width .4s}
+ul{list-style:none;margin:0;padding:0}
+.task{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.task:first-child{border-top:0}
+.task span{flex:1;font-size:15px}
+.task.done span{color:#5d6471;text-decoration:line-through}
+.chk{width:28px;height:28px;border-radius:50%;border:2px solid var(--muted);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#04120c;font-weight:900;font-size:15px}
+.task.done .chk{background:var(--em);border-color:var(--em)}
+.ico{width:36px;height:36px;color:var(--muted);font-size:16px}
+.add{display:flex;gap:8px;margin-top:10px}
+.add input{flex:1}
+.add button{width:52px;background:var(--raised);border:1px solid var(--line);border-radius:12px;font-size:22px;font-weight:700}
+.hd{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.hd h3{font-family:var(--mono);font-size:15px}
+.empty{color:var(--muted);font-size:13px;padding:6px 0}
+
+/* settings */
+.set-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.set-row:first-of-type{border-top:0}
+.set-row .lbl{font-weight:600}
+.set-row .lbl small{display:block;color:var(--muted);font-weight:400;font-size:12px;margin-top:2px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 4px}
+.chip{padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--raised);font-family:var(--mono);font-weight:700;font-size:14px}
+.chip.on{background:var(--blue);color:#03141a;border-color:var(--blue)}
+.sw{position:relative;width:52px;height:30px;flex-shrink:0}
+.sw input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:2}
+.sw i{position:absolute;inset:0;background:var(--line);border-radius:15px;transition:.2s}
+.sw i::after{content:"";position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:.2s}
+.sw input:checked+i{background:var(--em)}
+.sw input:checked+i::after{transform:translateX(22px);background:#04120c}
+.prayer{padding:12px 0;border-top:1px solid var(--line)}
+.prayer:first-of-type{border-top:0}
+.prayer .r1{display:flex;gap:10px;align-items:center}
+.prayer input[type=text]{flex:1;padding:10px 12px}
+.note{background:rgba(255,184,77,.08);border:1px solid rgba(255,184,77,.3);color:var(--amber);border-radius:12px;padding:10px 12px;font-size:13px;margin-top:10px}
+.ok-note{background:rgba(18,247,164,.07);border:1px solid rgba(18,247,164,.3);color:var(--em)}
+.step{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--line)}
+.step:first-of-type{border-top:0}
+.step span{flex:1;font-size:14px}
+.step b{font-family:var(--mono);color:var(--amber);width:20px}
+
+/* nav */
+#nav{position:fixed;left:0;right:0;bottom:0;background:rgba(10,12,16,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);z-index:20}
+#nav .in{display:flex;width:100%;max-width:520px}
+#nav button{flex:1;padding:10px 0 9px;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.04em}
+#nav button span{font-size:22px;line-height:1}
+#nav button.on{color:var(--em)}
+
+/* sheet */
+#sheet{position:fixed;inset:0;z-index:50;display:none}
+#sheet.open{display:block}
+.backdrop{position:absolute;inset:0;background:rgba(0,0,0,.65)}
+.panel{position:absolute;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:22px 22px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));max-height:88vh;overflow:auto;animation:up .22s ease}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+.panel h3{font-size:18px;margin-bottom:6px}
+.panel .btns{display:flex;gap:10px;margin-top:14px}
+.panel .btns .btn{flex:1}
+.panel input{margin-top:8px}
+.bars{display:flex;align-items:flex-end;gap:8px;height:150px;margin:14px 0 6px}
+.bars div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-family:var(--mono);font-size:10px;color:var(--muted)}
+.bars i{display:block;width:100%;background:var(--blue);border-radius:6px 6px 0 0;min-height:3px}
+.bars i.hit{background:var(--em)}
+#alarm{position:fixed;inset:0;z-index:99;background:rgba(8,9,12,.97);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
+#alarm.open{display:flex}
+#alarm .em{font-size:72px;animation:ring 1s infinite}
+@keyframes ring{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(12deg)}}
+#alarm h2{font-size:26px;margin:18px 0 8px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="main"></div>
+</div>
+<nav id="nav"><div class="in">
+  <button data-act="go" data-p="home"><span>🏠</span>HOME</button>
+  <button data-act="go" data-p="tasks"><span>✅</span>KAAM</button>
+  <button data-act="go" data-p="settings"><span>⚙️</span>SETTINGS</button>
+</div></nav>
+<div id="sheet"></div>
+<div id="alarm"><div class="em">⏰</div><h2 id="alarmTitle"></h2><p id="alarmBody" class="muted"></p><button class="btn primary" style="margin-top:22px;min-width:200px" data-act="alarmOff">Theek hai ✓</button></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------------- basics ---------------- */
+const NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+const LN = (NATIVE && window.Capacitor.Plugins) ? window.Capacitor.Plugins.LocalNotifications : null;
+const KEY = 'dailyOps_v3';
+const uid = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'i' + Math.random().toString(36).slice(2);
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const toMin = t => { const p = String(t || '0:0').split(':').map(Number); return (p[0] || 0) * 60 + (p[1] || 0); };
+const fmtMin = m => { m = ((m % 1440) + 1440) % 1440; const h = Math.floor(m / 60), mm = m % 60; return ((h % 12) || 12) + ':' + String(mm).padStart(2, '0') + ' ' + (h < 12 ? 'AM' : 'PM'); };
+const fmtT = t => fmtMin(toMin(t));
+const fmtDate = d => fmtMin(d.getHours() * 60 + d.getMinutes());
+function fmtDur(ms){
+  const m = Math.max(1, Math.round(ms / 60000));
+  if (m < 60) return m + ' min';
+  const h = Math.floor(m / 60), r = m % 60;
+  return h + ' ghante' + (r ? ' ' + r + ' min' : '');
+}
+
+/* ---------------- state ---------------- */
+function defaults(){
+  return {
+    v: 3, day: null,
+    settings: {
+      cup: 200, target: 2500, waterOn: true, waterEvery: 60,
+      wake: '04:30', wakeOn: true, sleep: '21:30', sleepOn: true,
+      prayers: [
+        { id: uid(), name: 'Fajr', time: '05:10', on: true },
+        { id: uid(), name: 'Zuhr + Asr', time: '12:15', on: true },
+        { id: uid(), name: 'Maghrib + Isha', time: '18:00', on: true }
+      ],
+      routine: ['Wudu karke Fajr ki namaz parho', 'Exercise karo (run + planks)', 'Pani piyo — 1 se 2 glass']
+    },
+    water: {},
+    nonNeg: [
+      { id: uid(), text: 'Namaz waqt par parhna', checked: false },
+      { id: uid(), text: 'Hotel Owner Meetup (Keychain Stand Pitch)', checked: false }
+    ],
+    core: [
+      { id: uid(), text: 'Design 3 Mascot Keychains (AI Vector conversion)', checked: false },
+      { id: uid(), text: 'Check Pinterest analytics for Tree Clock impressions', checked: false }
+    ],
+    quick: [
+      { id: uid(), text: 'Roti laana (1:00 PM)', checked: false },
+      { id: uid(), text: 'Nakhun kaatna', checked: false }
+    ],
+    habits: [
+      { id: uid(), text: 'Gussa Control (5 seconds khamoshi)', checked: false },
+      { id: uid(), text: '4:00 AM Morning Routine (Run + Planks)', checked: false }
+    ],
+    win: '', leak: '', audits: [],
+    routine: { day: null, idx: 0, done: false, planAsked: false }
+  };
+}
+function load(){
+  const base = defaults();
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) {
+      const p = JSON.parse(raw);
+      const s = Object.assign(base, p);
+      s.settings = Object.assign(defaults().settings, p.settings || {});
+      s.routine = Object.assign(defaults().routine, p.routine || {});
+      return s;
+    }
+    const old = localStorage.getItem('dailyOpsState_v2');
+    if (old) {
+      const o = JSON.parse(old);
+      const conv = a => (a || []).map(t => ({ id: t.id || uid(), text: t.text, checked: !!(t.checked || t.status === 'done') }));
+      if (o.nonNeg) base.nonNeg = conv(o.nonNeg);
+      if (o.core) base.core = conv(o.core);
+      if (o.quick) base.quick = conv(o.quick);
+      if (o.habits) base.habits = conv(o.habits);
+      base.audits = (o.auditHistory || []).slice(0, 30);
+    }
+  } catch (e) {}
+  return base;
+}
+let state = load();
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+function dayKey(d){
+  d = d || new Date();
+  const W = toMin(state.settings.wake);
+  const x = new Date(d.getTime() - W * 60000);
+  return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+}
+function rollover(){
+  const k = dayKey();
+  if (state.day && k <= state.day) return false;
+  state.nonNeg.forEach(t => t.checked = false);
+  state.habits.forEach(t => t.checked = false);
+  state.core = state.core.filter(t => !t.checked);
+  state.quick = state.quick.filter(t => !t.checked);
+  state.routine = { day: k, idx: 0, done: false, planAsked: false };
+  state.day = k;
+  const keys = Object.keys(state.water).sort();
+  while (keys.length > 45) delete state.water[keys.shift()];
+  save();
+  return true;
+}
+rollover();
+if (!state.day) { state.day = dayKey(); save(); }
+
+/* ---------------- water ---------------- */
+function wd(){ if (!state.water[state.day]) state.water[state.day] = { ml: 0, log: [] }; return state.water[state.day]; }
+function awakeInfo(now){
+  now = now || new Date();
+  const S = state.settings, W = toMin(S.wake), Sl = toMin(S.sleep);
+  const m = now.getHours() * 60 + now.getMinutes();
+  const dur = (((Sl - W) + 1440) % 1440) || 1440;
+  const el = (m - W + 1440) % 1440;
+  return { awake: el < dur, el, dur, W, Sl, m };
+}
+function expectedMl(){
+  const i = awakeInfo();
+  return i.awake ? Math.round(state.settings.target * i.el / i.dur) : state.settings.target;
+}
+
+/* ---------------- schedule (shared by native + browser) ---------------- */
+const WATER_MSG = [
+  'Ek cup ({ml} ml) pani piyo 💧',
+  'Pani peene ka waqt ho gaya — {ml} ml 🥛',
+  'Sehat ke liye pani! Abhi ek cup piyo 💦',
+  'Dimaag aur jism ko pani chahiye — {ml} ml piyo'
+];
+function buildPlan(now){
+  const S = state.settings, out = [];
+  const y = now.getFullYear(), mo = now.getMonth(), da = now.getDate();
+  const mk = (d, min) => new Date(y, mo, da + d, 0, min, 0, 0);
+  const W = toMin(S.wake), Sl = toMin(S.sleep);
+  for (let d = 0; d < 7; d++) {
+    if (S.wakeOn) out.push({ kind: 'wake', at: mk(d, W), title: '☀️ Uth jao!', body: 'Subah ho gayi — pani piyo, namaz parho, routine shuru karo.', ch: 'alarm', name: 'Jagne ka alarm' });
+    if (S.sleepOn) out.push({ kind: 'sleep', at: mk(d, Sl - 30), title: '🌙 Sone ka waqt qareeb', body: '30 min mein sona hai. Raat ka hisaab likho, phone side pe rakho.', ch: 'sleep', name: 'Sone ki yaad' });
+    S.prayers.forEach(p => {
+      if (p.on) out.push({ kind: 'prayer', at: mk(d, toMin(p.time)), title: '🕌 ' + p.name + ' ka waqt ho gaya', body: 'Wudu karo aur namaz parho.', ch: 'alarm', name: p.name });
+    });
+  }
+  if (S.waterOn) {
+    const every = S.waterEvery * 60000, end = now.getTime() + 3 * 864e5;
+    const w = state.water[state.day];
+    const last = (w && w.log.length) ? w.log[w.log.length - 1].t : 0;
+    const dur = (((Sl - W) + 1440) % 1440) || 1440;
+    const awakeAt = t => { const dt = new Date(t); const m = dt.getHours() * 60 + dt.getMinutes(); return ((m - W + 1440) % 1440) < dur; };
+    const nextWake = t => {
+      const dt = new Date(t);
+      let n = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate(), 0, W, 0, 0);
+      if (n <= dt) n = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate() + 1, 0, W, 0, 0);
+      return n.getTime();
+    };
+    let c = Math.max(now.getTime(), last) + every;
+    if (w && w.ml >= S.target) c = nextWake(now.getTime()) + every;
+    let n = 0;
+    while (c < end && n < 150) {
+      if (awakeAt(c)) {
+        out.push({ kind: 'water', at: new Date(c), title: '💧 Pani ka waqt!', body: WATER_MSG[n % WATER_MSG.length].split('{ml}').join(S.cup), ch: 'water', name: 'Pani' });
+        c += every; n++;
+      } else {
+        c = nextWake(c) + every;
+      }
+    }
+  }
+  return out.filter(x => x.at > now).sort((a, b) => a.at - b.at);
+}
+
+/* ---------------- native notifications ---------------- */
+const CH = { alarm: 'alarm_v1', water: 'water_v1', sleep: 'sleep_v1' };
+let permInfo = { notif: 'unknown', exact: 'unknown' };
+let schedInfo = { n: 0, err: '' };
+let schedBusy = false, schedAgain = false, schedTimer = null;
+
+async function ensureChannels(){
+  const mk = o => LN.createChannel(o).catch(() => {});
+  await mk({ id: CH.alarm, name: 'Alarm — Namaz & Jagna', description: 'Namaz aur subah jagne ke alarm', importance: 5, visibility: 1, vibration: true, lights: true, sound: 'alarm_tone.wav' });
+  await mk({ id: CH.water, name: 'Pani ki yaad', description: 'Pani peene ke reminder', importance: 4, visibility: 1, vibration: true, sound: 'water_tone.wav' });
+  await mk({ id: CH.sleep, name: 'Sone ki yaad', description: 'Sone se pehle yaad', importance: 3, visibility: 1, vibration: false, sound: 'water_tone.wav' });
+}
+async function ensurePerms(ask){
+  if (!LN) return;
+  try {
+    let p = await LN.checkPermissions();
+    if (p.display !== 'granted' && ask) p = await LN.requestPermissions();
+    permInfo.notif = p.display;
+  } catch (e) { permInfo.notif = 'error'; }
+  try {
+    if (LN.checkExactNotificationSetting) {
+      let x = await LN.checkExactNotificationSetting();
+      if (x.exact_alarm !== 'granted' && ask) {
+        await LN.changeExactNotificationSetting();
+        x = await LN.checkExactNotificationSetting();
+      }
+      permInfo.exact = x.exact_alarm;
+    }
+  } catch (e) {}
+}
+async function schedNative(){
+  const plan = buildPlan(new Date());
+  try {
+    await ensureChannels();
+    const pend = await LN.getPending();
+    if (pend.notifications && pend.notifications.length) await LN.cancel({ notifications: pend.notifications.map(n => ({ id: n.id })) });
+    let id = 1;
+    const list = plan.map(x => ({
+      id: id++, title: x.title, body: x.body,
+      schedule: { at: x.at, allowWhileIdle: true },
+      channelId: CH[x.ch], smallIcon: 'ic_stat_icon', iconColor: '#12F7A4',
+      extra: { kind: x.kind }
+    }));
+    for (let i = 0; i < list.length; i += 50) await LN.schedule({ notifications: list.slice(i, i + 50) });
+    schedInfo = { n: list.length, err: '' };
+  } catch (e) {
+    schedInfo = { n: 0, err: String((e && e.message) || e) };
+  }
+}
+
+/* ---------------- browser fallback (tab open only) ---------------- */
+let webQueue = [], actx = null, alarmLoop = null;
+function schedWeb(){ webQueue = buildPlan(new Date()); }
+function webTick(){
+  const now = Date.now();
+  while (webQueue.length && webQueue[0].at.getTime() <= now) {
+    const it = webQueue.shift();
+    if (now - it.at.getTime() < 120000) showAlarm(it.title, it.body, it.kind !== 'water');
+  }
+}
+function beepOnce(){
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    [660, 880, 1100].forEach((f, i) => {
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      const t = actx.currentTime + i * 0.35;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.4, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.33);
+      o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + 0.35);
+    });
+  } catch (e) {}
+}
+function showAlarm(title, body, loud){
+  $('#alarmTitle').textContent = title; $('#alarmBody').textContent = body;
+  $('#alarm').classList.add('open');
+  try { if (navigator.vibrate) navigator.vibrate([400, 200, 400]); } catch (e) {}
+  try { if ('Notification' in window && Notification.permission === 'granted') new Notification(title, { body }); } catch (e) {}
+  clearInterval(alarmLoop); beepOnce();
+  alarmLoop = setInterval(beepOnce, loud ? 2000 : 600000);
+}
+function alarmOff(){ clearInterval(alarmLoop); $('#alarm').classList.remove('open'); }
+
+function sched(){
+  clearTimeout(schedTimer);
+  schedTimer = setTimeout(async () => {
+    if (!NATIVE) { schedWeb(); return; }
+    if (schedBusy) { schedAgain = true; return; }
+    schedBusy = true;
+    do { schedAgain = false; await schedNative(); } while (schedAgain);
+    schedBusy = false;
+    if (page === 'settings' && !isSheetOpen()) render();
+  }, 600);
+}
+
+/* ---------------- sheets ---------------- */
+let sheetCancel = null;
+const isSheetOpen = () => $('#sheet').classList.contains('open');
+function openSheet(html){ $('#sheet').innerHTML = '<div class="backdrop" data-act="closeSheet"></div><div class="panel">' + html + '</div>'; $('#sheet').classList.add('open'); }
+function closeSheet(){
+  $('#sheet').classList.remove('open'); $('#sheet').innerHTML = '';
+  if (sheetCancel) { const f = sheetCancel; sheetCancel = null; f(); }
+}
+function askText(title, val, ph){
+  return new Promise(res => {
+    openSheet('<h3>' + esc(title) + '</h3><input id="shIn" type="text" autocomplete="off" placeholder="' + esc(ph || '') + '" value="' + esc(val || '') + '"><div class="btns"><button class="btn" id="shNo">Cancel</button><button class="btn primary" id="shYes">Save</button></div>');
+    sheetCancel = () => res(null);
+    const inp = $('#shIn');
+    setTimeout(() => inp.focus(), 60);
+    const ok = () => { const v = inp.value.trim(); sheetCancel = null; closeSheet(); res(v || null); };
+    $('#shYes').onclick = ok;
+    $('#shNo').onclick = closeSheet;
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') ok(); });
+  });
+}
+function askConfirm(msg){
+  return new Promise(res => {
+    openSheet('<h3>' + esc(msg) + '</h3><div class="btns"><button class="btn" id="shNo">Nahi</button><button class="btn danger" id="shYes">Haan, karo</button></div>');
+    sheetCancel = () => res(false);
+    $('#shYes').onclick = () => { sheetCancel = null; closeSheet(); res(true); };
+    $('#shNo').onclick = closeSheet;
+  });
+}
+function openPlan(){
+  openSheet('<h3>📋 Aaj ka plan kia hai?</h3><p class="sub">Aaj ke sabse zaroori kaam likho (1 se 3). Din random nahi jaana chahiye.</p>' +
+    '<input class="plIn" type="text" placeholder="Kaam 1" autocomplete="off"><input class="plIn" type="text" placeholder="Kaam 2 (optional)" autocomplete="off"><input class="plIn" type="text" placeholder="Kaam 3 (optional)" autocomplete="off">' +
+    '<div class="btns"><button class="btn" id="plNo">Baad mein</button><button class="btn primary" id="plYes">Plan set karo</button></div>');
+  setTimeout(() => { const i = document.querySelector('.plIn'); if (i) i.focus(); }, 80);
+  $('#plNo').onclick = closeSheet;
+  $('#plYes').onclick = () => {
+    const vals = [...document.querySelectorAll('.plIn')].map(i => i.value.trim()).filter(Boolean);
+    if (!vals.length) { closeSheet(); return; }
+    vals.forEach(v => state.core.push({ id: uid(), text: v, checked: false }));
+    state.routine.planAsked = true; save(); closeSheet(); go('home');
+  };
+}
+function openHistory(){
+  const parts = state.day.split('-').map(Number);
+  let bars = '';
+  const names = ['Itwar', 'Peer', 'Mangal', 'Budh', 'Jumerat', 'Jumma', 'Hafta'];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(parts[0], parts[1] - 1, parts[2] - i);
+    const k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const ml = (state.water[k] && state.water[k].ml) || 0;
+    const h = clamp(Math.round(ml / Math.max(state.settings.target, 1) * 100), 0, 100);
+    bars += '<div><span>' + ml + '</span><i class="' + (ml >= state.settings.target ? 'hit' : '') + '" style="height:' + h + '%"></i><span>' + names[d.getDay()].slice(0, 3) + '</span></div>';
+  }
+  openSheet('<h3>📊 Pichle 7 din ka pani</h3><p class="sub">Hara = target poora. Target: ' + state.settings.target + ' ml</p><div class="bars">' + bars + '</div><div class="btns"><button class="btn" data-act="closeSheet">Band karo</button></div>');
+}
+
+/* ---------------- pages ---------------- */
+let page = 'home';
+const LISTS = [
+  { k: 'nonNeg', t: '🎯 Zaroori kaam', h: 'Jo har haal mein karne hain (roz dobara aate hain)', ph: '+ zaroori kaam likho…' },
+  { k: 'core', t: '⚡ Aaj ke kaam', h: 'Business / kaam. Poore hue kaam agle din hat jate hain', ph: '+ kaam likho…' },
+  { k: 'quick', t: '🧹 Chhote kaam', h: 'Roti lana, nakhun katna…', ph: '+ chhota kaam…' },
+  { k: 'habits', t: '🧠 Aadatein', h: 'Gussa control, jaldi uthna… (roz dobara aati hain)', ph: '+ aadat likho…' }
+];
+function greeting(){
+  const h = new Date().getHours();
+  return h < 5 ? 'Raat ka waqt 🌙' : h < 12 ? 'Subah bakhair ☀️' : h < 17 ? 'Dopehar bakhair 🌤️' : h < 21 ? 'Shaam bakhair 🌆' : 'Raat bakhair 🌙';
+}
+function nextAlarm(){
+  const it = buildPlan(new Date()).find(x => x.kind === 'wake' || x.kind === 'prayer');
+  return it || null;
+}
+
+function nowCard(){
+  const info = awakeInfo(), S = state.settings, R = state.routine;
+  if (!info.awake) {
+    const wakeAt = buildPlan(new Date()).find(x => x.kind === 'wake');
+    return '<section class="card now sleep"><div class="eyebrow">Abhi</div><div class="big">😴 Sone ka waqt hai</div><p class="muted small" style="margin:8px 0 0">Phone side pe rakho. Subah ' + fmtT(S.wake) + ' par jagna hai' + (wakeAt ? ' (' + fmtDur(wakeAt.at - new Date()) + ' baad)' : '') + '.</p></section>';
+  }
+  const steps = S.routine;
+  if (!R.done && steps.length && info.el <= 240) {
+    const i = clamp(R.idx, 0, steps.length - 1);
+    let dots = '';
+    steps.forEach((_, j) => { dots += '<i class="' + (j < i ? 'on' : j === i ? 'cur' : '') + '"></i>'; });
+    return '<section class="card now"><div class="eyebrow">☀️ Subah ka routine · step ' + (i + 1) + '/' + steps.length + '</div><div class="big">' + esc(steps[i]) + '</div><div class="dots">' + dots + '</div><button class="btn primary block" data-act="stepDone">Ho gaya ✓</button><div style="text-align:center;margin-top:10px"><button class="link" data-act="skipRoutine">Routine skip karo</button></div></section>';
+  }
+  if (!R.planAsked && (R.done || info.el > 240)) {
+    return '<section class="card now"><div class="eyebrow">Abhi</div><div class="big">📋 Aaj ka plan kia hai?</div><p class="muted small" style="margin:8px 0 14px">Din shuru karne se pehle apne zaroori kaam likh lo.</p><button class="btn primary block" data-act="plan">Plan likho</button></section>';
+  }
+  let line, icon = '✅';
+  const gap = expectedMl() - wd().ml;
+  const pendNN = state.nonNeg.find(t => !t.checked), pendCore = state.core.find(t => !t.checked);
+  const toSleep = (info.dur - info.el);
+  if (gap >= S.cup && wd().ml < S.target) { icon = '💧'; line = 'Pani piyo — ' + gap + ' ml peeche ho'; }
+  else if (pendNN) { icon = '🎯'; line = pendNN.text; }
+  else if (pendCore) { icon = '⚡'; line = pendCore.text; }
+  else if (toSleep <= 90) { icon = '📝'; line = 'Raat ka hisaab likho (Kaam tab mein)'; }
+  else line = 'Sab theek chal raha hai. Shabash!';
+  return '<section class="card now"><div class="eyebrow">Abhi karna hai</div><div class="big">' + icon + ' ' + esc(line) + '</div></section>';
+}
+
+function pageHome(){
+  const S = state.settings, w = wd(), pct = Math.round(w.ml / Math.max(S.target, 1) * 100);
+  const C = 578, off = C - C * clamp(w.ml / Math.max(S.target, 1), 0, 1);
+  const gap = expectedMl() - w.ml;
+  let pace;
+  if (w.ml >= S.target) pace = '<div class="pace ok">🎉 Aaj ka target poora! Mashallah</div>';
+  else if (gap >= S.cup) pace = '<div class="pace warn">' + (w.ml === 0 ? 'Abhi tak ' + expectedMl() + ' ml hona chahiye — pehla cup piyo!' : 'Abhi tak ' + expectedMl() + ' ml hona chahiye — ' + gap + ' ml peeche') + '</div>';
+  else pace = '<div class="pace ok">Bilkul theek chal rahe ho 👍</div>';
+  const na = nextAlarm();
+  const alarmCard = na
+    ? '<section class="card"><div class="eyebrow">⏰ Agla alarm</div><div class="row between"><div><div class="big">' + esc(na.kind === 'wake' ? 'Jagna' : na.name) + '</div><div class="muted small">' + fmtDate(na.at) + ' · ' + fmtDur(na.at - new Date()) + ' baad</div></div><button class="link" data-act="go" data-p="settings">Badlo</button></div></section>'
+    : '<section class="card"><div class="eyebrow">⏰ Alarm</div><div class="muted small">Koi alarm on nahi. Settings mein set karo.</div></section>';
+  const all = state.nonNeg.concat(state.core);
+  const done = all.filter(t => t.checked).length;
+  const pend = [];
+  state.nonNeg.forEach(t => { if (!t.checked) pend.push(['nonNeg', t]); });
+  state.core.forEach(t => { if (!t.checked) pend.push(['core', t]); });
+  const show = pend.slice(0, 4);
+  const tasks = '<section class="card"><div class="row between"><div class="eyebrow" style="margin:0">Aaj ke kaam</div><button class="link" data-act="go" data-p="tasks">Sab dekho →</button></div>' +
+    '<div class="prog"><i style="width:' + (all.length ? Math.round(done / all.length * 100) : 0) + '%"></i></div>' +
+    (show.length ? '<ul>' + show.map(x => taskRow(x[0], x[1])).join('') + '</ul>' + (pend.length > 4 ? '<div class="muted small">+ ' + (pend.length - 4) + ' aur…</div>' : '') : '<div class="empty">' + (all.length ? 'Sab kaam ho gaye ✓' : 'Koi kaam nahi — Kaam tab mein add karo') + '</div>') + '</section>';
+  return '<div class="top"><div><div class="hello">' + greeting() + '</div><div class="date">' + new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase() + '</div></div></div>' +
+    nowCard() +
+    '<section class="card"><div class="eyebrow">💧 Aaj ka pani</div>' +
+    '<div class="ring-wrap"><svg class="ring" viewBox="0 0 220 220"><circle class="ring-bg" cx="110" cy="110" r="92"/><circle class="ring-fg ' + (w.ml >= S.target ? 'full' : '') + '" cx="110" cy="110" r="92" stroke-dasharray="' + C + '" stroke-dashoffset="' + off + '" transform="rotate(-90 110 110)"/></svg>' +
+    '<div class="ring-center"><div class="ml">' + w.ml + '</div><div class="of">/ ' + S.target + ' ml</div><div class="pct">' + pct + '%</div></div></div>' +
+    '<button class="cup-btn" id="cupBtn" data-act="drink"><span class="cup">🥛</span><span><b>+' + S.cup + ' ml</b><small>Pani piya? Yahan tap karo</small></span></button>' +
+    pace +
+    '<div class="row" style="margin-top:10px"><button class="btn block" data-act="undo">↩ Undo</button><button class="btn block" data-act="history">📊 7 din</button></div></section>' +
+    alarmCard + tasks;
+}
+
+function taskRow(k, t){
+  return '<li class="task ' + (t.checked ? 'done' : '') + '"><button class="chk" data-act="toggle" data-list="' + k + '" data-id="' + t.id + '">' + (t.checked ? '✓' : '') + '</button><span data-act="toggle" data-list="' + k + '" data-id="' + t.id + '">' + esc(t.text) + '</span></li>';
+}
+function pageTasks(){
+  let h = '<h1 class="page-title">✅ Kaam</h1><p class="sub">Tap karke tick karo. ✎ se badlo, 🗑 se hatao.</p>';
+  LISTS.forEach(L => {
+    const items = state[L.k];
+    const done = items.filter(t => t.checked).length;
+    h += '<section class="card"><div class="hd"><h3>' + L.t + '</h3><span class="muted small" style="margin-left:auto">' + done + '/' + items.length + '</span></div><p class="muted small" style="margin:0 0 6px">' + L.h + '</p>';
+    h += items.length ? '<ul>' + items.map(t => '<li class="task ' + (t.checked ? 'done' : '') + '"><button class="chk" data-act="toggle" data-list="' + L.k + '" data-id="' + t.id + '">' + (t.checked ? '✓' : '') + '</button><span data-act="toggle" data-list="' + L.k + '" data-id="' + t.id + '">' + esc(t.text) + '</span><button class="ico" data-act="edit" data-list="' + L.k + '" data-id="' + t.id + '">✎</button><button class="ico" data-act="del" data-list="' + L.k + '" data-id="' + t.id + '">🗑</button></li>').join('') + '</ul>' : '<div class="empty">— abhi kuch nahi —</div>';
+    h += '<form class="add" data-list="' + L.k + '"><input type="text" placeholder="' + esc(L.ph) + '" autocomplete="off"><button type="submit">+</button></form></section>';
+  });
+  h += '<section class="card"><div class="hd"><h3>📊 Raat ka hisaab</h3></div><p class="muted small" style="margin:0 0 8px">Sone se pehle likho. Sach likho, ye sirf tumhare liye hai.</p>' +
+    '<div class="eyebrow" style="color:var(--em)">📈 Aaj kia acha raha</div><textarea rows="2" data-audit="win" placeholder="Kia perfect gaya?">' + esc(state.win) + '</textarea>' +
+    '<div class="eyebrow" style="color:var(--amber);margin-top:10px">⚠️ Aaj waqt kahan zaya hua</div><textarea rows="2" data-audit="leak" placeholder="Kahan waqt zaya hua?">' + esc(state.leak) + '</textarea>' +
+    '<button class="btn primary block" style="margin-top:12px" data-act="saveAudit">🔒 Hisaab save karo</button>';
+  if (state.audits.length) {
+    h += '<div style="margin-top:12px">' + state.audits.slice(0, 14).map((a, i) => '<div class="task" style="align-items:flex-start"><div style="flex:1"><div class="muted small" style="font-family:var(--mono)">' + esc(a.date) + '</div><div class="small" style="color:var(--em)">📈 ' + esc(a.win || '—') + '</div><div class="small" style="color:var(--amber)">⚠️ ' + esc(a.leak || '—') + '</div></div><button class="ico" data-act="delAudit" data-i="' + i + '">🗑</button></div>').join('') + '</div>';
+  }
+  return h + '</section>';
+}
+
+function sw(setKey, checked, extra){
+  return '<label class="sw"><input type="checkbox" data-set="' + setKey + '" ' + (extra || '') + (checked ? ' checked' : '') + '><i></i></label>';
+}
+function pageSettings(){
+  const S = state.settings;
+  const sleepDur = (((toMin(S.wake) - toMin(S.sleep)) + 1440) % 1440);
+  const sh = Math.floor(sleepDur / 60), sm = sleepDur % 60;
+  const cups = [100, 150, 200, 250, 300, 500];
+  let h = '<h1 class="page-title">⚙️ Settings</h1><p class="sub">Sab kuch yahan se apni marzi se set karo.</p>';
+
+  // water
+  h += '<section class="card"><div class="hd"><h3>💧 Pani</h3></div>' +
+    '<div class="set-row" style="display:block"><div class="lbl">Cup / glass ka size<small>Home pe yehi size ka button aayega</small></div>' +
+    '<div class="chips">' + cups.map(c => '<button class="chip ' + (S.cup === c ? 'on' : '') + '" data-act="cup" data-v="' + c + '">' + c + ' ml</button>').join('') + '</div>' +
+    '<div class="row" style="margin-top:8px"><span class="muted small">Ya apna size:</span><input type="number" inputmode="numeric" min="10" max="2000" step="10" value="' + S.cup + '" data-set="cup"><span class="muted small">ml</span></div></div>' +
+    '<div class="set-row"><div class="lbl">Roz ka target<small>Kitna pani peena hai</small></div><div class="row"><input type="number" inputmode="numeric" min="500" max="10000" step="100" value="' + S.target + '" data-set="target"><span class="muted small">ml</span></div></div>' +
+    '<div class="set-row"><div class="lbl">Pani ki yaad<small>Jagne se sone tak</small></div>' + sw('waterOn', S.waterOn) + '</div>' +
+    '<div class="set-row"><div class="lbl">Har kitni der baad yaad dilaye</div><select data-set="waterEvery" style="width:auto">' + [30, 45, 60, 90, 120].map(v => '<option value="' + v + '" ' + (S.waterEvery === v ? 'selected' : '') + '>' + (v < 60 ? v + ' min' : v === 60 ? '1 ghanta' : v === 90 ? '1.5 ghante' : '2 ghante') + '</option>').join('') + '</select></div></section>';
+
+  // sleep
+  h += '<section class="card"><div class="hd"><h3>🌙 Jagna &amp; Sona</h3></div>' +
+    '<div class="set-row"><div class="lbl">Subah jagne ka time</div><input type="time" value="' + S.wake + '" data-set="wake"></div>' +
+    '<div class="set-row"><div class="lbl">Jagne ka alarm</div>' + sw('wakeOn', S.wakeOn) + '</div>' +
+    '<div class="set-row"><div class="lbl">Raat sone ka time<small>Is ke baad pani ke reminder nahi aayenge</small></div><input type="time" value="' + S.sleep + '" data-set="sleep"></div>' +
+    '<div class="set-row"><div class="lbl">Sone se 30 min pehle yaad<small>Raat ka hisaab likhne ke liye</small></div>' + sw('sleepOn', S.sleepOn) + '</div>' +
+    '<div class="note ' + (sleepDur >= 420 ? 'ok-note' : '') + '">😴 Neend: ' + sh + ' ghante' + (sm ? ' ' + sm + ' min' : '') + (sleepDur < 420 ? ' — 7 ghante se kam hai, thodi aur neend lo.' : ' — theek hai.') + '</div></section>';
+
+  // prayers
+  h += '<section class="card"><div class="hd"><h3>🕌 Namaz ke alarm</h3></div><p class="muted small" style="margin:0 0 6px">Apne mehfil/masjid ke hisaab se time khud set karo. Zuhr + Asr ka ek hi alarm hai. Jitne chaho add karo.</p>';
+  S.prayers.forEach(p => {
+    h += '<div class="prayer"><div class="r1"><input type="text" value="' + esc(p.name) + '" data-set="p.name" data-id="' + p.id + '">' + sw('p.on', p.on, 'data-id="' + p.id + '"') + '</div>' +
+      '<div class="row between" style="margin-top:8px"><input type="time" value="' + p.time + '" data-set="p.time" data-id="' + p.id + '"><button class="link" style="color:var(--red)" data-act="delPrayer" data-id="' + p.id + '">🗑 Hatao</button></div></div>';
+  });
+  h += '<button class="btn block" style="margin-top:10px" data-act="addPrayer">+ Naya namaz alarm</button></section>';
+
+  // routine
+  h += '<section class="card"><div class="hd"><h3>☀️ Subah ka routine</h3></div><p class="muted small" style="margin:0 0 6px">Uthne ke baad app yeh steps ek ek karke batayegi, phir "aaj ka plan" poochegi.</p>';
+  S.routine.forEach((s, i) => { h += '<div class="step"><b>' + (i + 1) + '</b><span>' + esc(s) + '</span><button class="ico" data-act="editStep" data-i="' + i + '">✎</button><button class="ico" data-act="delStep" data-i="' + i + '">🗑</button></div>'; });
+  h += '<button class="btn block" style="margin-top:10px" data-act="addStep">+ Naya step</button></section>';
+
+  // notifications
+  const permTxt = NATIVE
+    ? (permInfo.notif === 'granted' ? '✅ Notification allowed' : '❌ Notification allowed nahi') + ' · ' + (permInfo.exact === 'granted' ? '✅ Exact alarm allowed' : permInfo.exact === 'unknown' ? '' : '❌ Exact alarm allowed nahi')
+    : '';
+  h += '<section class="card"><div class="hd"><h3>🔔 Alarm check</h3></div>' +
+    (NATIVE
+      ? '<div class="note ' + (permInfo.notif === 'granted' && permInfo.exact !== 'denied' ? 'ok-note' : '') + '">' + permTxt + '<br>Set kiye hue alarms: ' + schedInfo.n + (schedInfo.err ? '<br>Error: ' + esc(schedInfo.err) : '') + '</div>'
+      : '<div class="note">Yeh browser mode hai: alarm sirf tab bajenge jab yeh page khula ho. APK install karne par band phone mein bhi alarm bajenge.</div>') +
+    '<div class="row" style="margin-top:12px"><button class="btn block" data-act="perms">Permission do</button><button class="btn block" data-act="test">Test alarm (5 sec)</button></div>' +
+    '<p class="muted small" style="margin:12px 0 0">💡 Alarm pakka bajne ke liye: Phone Settings → Apps → Daily Ops → Battery → <b>Unrestricted / No restrictions</b>. (Xiaomi/Oppo/Vivo/Infinix mein "Autostart" bhi on karo.)</p></section>';
+
+  h += '<section class="card"><button class="btn danger block" data-act="resetAll">🗑 Sab data reset karo</button></section>';
+  return h;
+}
+
+function render(){
+  const main = $('#main');
+  main.innerHTML = page === 'home' ? pageHome() : page === 'tasks' ? pageTasks() : pageSettings();
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.p === page));
+}
+function go(p){ page = p; render(); window.scrollTo(0, 0); }
+
+/* ---------------- actions ---------------- */
+function findItem(list, id){ return state[list].find(t => t.id === id); }
+const acts = {
+  go: el => go(el.dataset.p),
+  closeSheet: () => closeSheet(),
+  alarmOff: () => alarmOff(),
+  drink: () => {
+    const w = wd(); w.ml += state.settings.cup; w.log.push({ t: Date.now(), ml: state.settings.cup });
+    try { if (navigator.vibrate) navigator.vibrate(35); } catch (e) {}
+    save(); render(); sched();
+    const b = $('#cupBtn'); if (b) b.classList.add('pop');
+  },
+  undo: () => { const w = wd(); const l = w.log.pop(); if (l) { w.ml = Math.max(0, w.ml - l.ml); save(); render(); sched(); } },
+  history: () => openHistory(),
+  stepDone: () => {
+    const R = state.routine; R.idx++;
+    if (R.idx >= state.settings.routine.length) { R.done = true; save(); render(); openPlan(); }
+    else { save(); render(); }
+  },
+  skipRoutine: () => { state.routine.done = true; save(); render(); },
+  plan: () => openPlan(),
+  toggle: el => { const t = findItem(el.dataset.list, el.dataset.id); if (t) { t.checked = !t.checked; save(); render(); } },
+  edit: async el => { const t = findItem(el.dataset.list, el.dataset.id); if (!t) return; const v = await askText('Badlo', t.text); if (v) { t.text = v; save(); render(); } },
+  del: async el => { if (await askConfirm('Yeh hata dun?')) { state[el.dataset.list] = state[el.dataset.list].filter(t => t.id !== el.dataset.id); save(); render(); } },
+  saveAudit: () => {
+    const win = state.win.trim(), leak = state.leak.trim();
+    if (!win && !leak) return;
+    state.audits.unshift({ date: new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }), win, leak });
+    state.audits = state.audits.slice(0, 30); state.win = ''; state.leak = ''; save(); render();
+  },
+  delAudit: el => { state.audits.splice(+el.dataset.i, 1); save(); render(); },
+  cup: el => { state.settings.cup = +el.dataset.v; save(); render(); sched(); },
+  addPrayer: async () => { const n = await askText('Alarm ka naam', '', 'jaise: Namaz-e-Shab'); if (n) { state.settings.prayers.push({ id: uid(), name: n, time: '12:00', on: true }); save(); render(); sched(); } },
+  delPrayer: async el => { if (await askConfirm('Yeh alarm hata dun?')) { state.settings.prayers = state.settings.prayers.filter(p => p.id !== el.dataset.id); save(); render(); sched(); } },
+  addStep: async () => { const v = await askText('Naya step', '', 'jaise: Naha kar tayyar ho'); if (v) { state.settings.routine.push(v); save(); render(); } },
+  editStep: async el => { const i = +el.dataset.i; const v = await askText('Step badlo', state.settings.routine[i]); if (v) { state.settings.routine[i] = v; save(); render(); } },
+  delStep: async el => { if (await askConfirm('Yeh step hata dun?')) { state.settings.routine.splice(+el.dataset.i, 1); state.routine.idx = 0; save(); render(); } },
+  perms: async () => {
+    if (NATIVE) { await ensurePerms(true); sched(); render(); }
+    else if ('Notification' in window) { try { await Notification.requestPermission(); } catch (e) {} showAlarm('🔔 Test', 'Notification permission check', false); }
+  },
+  test: async () => {
+    if (!NATIVE) { setTimeout(() => showAlarm('🕌 Test alarm', 'Yeh alarm ka test hai. Sab theek hai!', true), 5000); return; }
+    try {
+      await ensureChannels(); await ensurePerms(true);
+      await LN.schedule({ notifications: [{ id: 999999, title: '⏰ Test alarm', body: 'Yeh alarm ka test hai. Sab theek hai!', schedule: { at: new Date(Date.now() + 5000), allowWhileIdle: true }, channelId: CH.alarm, smallIcon: 'ic_stat_icon', iconColor: '#12F7A4' }] });
+      openSheet('<h3>⏰ 5 second mein test alarm aayega</h3><p class="sub">App band kar ke ya screen lock kar ke bhi check kar sakte ho.</p><div class="btns"><button class="btn primary" data-act="closeSheet">Theek hai</button></div>');
+    } catch (e) { openSheet('<h3>Test fail hua</h3><p class="sub">' + esc(String((e && e.message) || e)) + '</p><div class="btns"><button class="btn" data-act="closeSheet">Band karo</button></div>'); }
+  },
+  resetAll: async () => {
+    if (await askConfirm('Sab data (kaam, pani, settings) mehfooz hata dun?')) {
+      try { localStorage.removeItem(KEY); } catch (e) {}
+      state = defaults(); state.day = dayKey(); state.routine.day = state.day; save(); render(); sched();
+    }
+  }
+};
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const f = acts[el.dataset.act];
+  if (f) f(el);
+});
+document.addEventListener('submit', e => {
+  const f = e.target.closest('form.add');
+  if (!f) return;
+  e.preventDefault();
+  const inp = f.querySelector('input'), v = inp.value.trim();
+  if (!v) return;
+  state[f.dataset.list].push({ id: uid(), text: v, checked: false });
+  save(); render();
+  const again = document.querySelector('form.add[data-list="' + f.dataset.list + '"] input');
+  if (again) again.focus();
+});
+document.addEventListener('input', e => {
+  const a = e.target.dataset && e.target.dataset.audit;
+  if (a) { state[a] = e.target.value; save(); }
+});
+document.addEventListener('change', e => {
+  const el = e.target, k = el.dataset && el.dataset.set;
+  if (!k) return;
+  const S = state.settings;
+  switch (k) {
+    case 'cup': S.cup = clamp(Math.round(+el.value) || 200, 10, 2000); break;
+    case 'target': S.target = clamp(Math.round(+el.value) || 2500, 500, 10000); break;
+    case 'waterOn': S.waterOn = el.checked; break;
+    case 'waterEvery': S.waterEvery = +el.value; break;
+    case 'wake': if (el.value) S.wake = el.value; break;
+    case 'sleep': if (el.value) S.sleep = el.value; break;
+    case 'wakeOn': S.wakeOn = el.checked; break;
+    case 'sleepOn': S.sleepOn = el.checked; break;
+    case 'p.name': case 'p.time': case 'p.on': {
+      const p = S.prayers.find(x => x.id === el.dataset.id);
+      if (p) { if (k === 'p.name') p.name = el.value.trim() || p.name; if (k === 'p.time' && el.value) p.time = el.value; if (k === 'p.on') p.on = el.checked; }
+      break;
+    }
+  }
+  save(); render(); sched();
+});
+
+/* ---------------- lifecycle ---------------- */
+function tick(){
+  const changed = rollover();
+  if (!NATIVE) webTick();
+  if (page === 'home' && !isSheetOpen() && !$('#alarm').classList.contains('open')) render();
+  if (changed) sched();
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { rollover(); render(); sched(); } });
+
+async function init(){
+  render();
+  if (NATIVE && LN) {
+    try { await ensureChannels(); await ensurePerms(true); } catch (e) {}
+    try { LN.addListener('localNotificationActionPerformed', () => { rollover(); go('home'); }); } catch (e) {}
+  } else if (!NATIVE && 'Notification' in window && Notification.permission === 'default') {
+    try { Notification.requestPermission(); } catch (e) {}
+  }
+  sched();
+  setInterval(tick, NATIVE ? 30000 : 5000);
+  if (NATIVE) render();
+}
+window.__dailyOps = { buildPlan: buildPlan, getState: () => state };
+init();
+})();
+</script>
+</body>
+</html>
