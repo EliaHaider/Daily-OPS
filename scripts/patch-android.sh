@@ -11,6 +11,7 @@ done
 sed -i 's#<activity#<activity android:screenOrientation="portrait"#' "$M"
 # sounds + notification icon
 cp -r android-overlay/app/src/main/res/* android/app/src/main/res/
+python3 scripts/make-sounds.py android/app/src/main/res/raw
 # dark status/navigation bar
 S=android/app/src/main/res/values/styles.xml
 sed -i '/<style name="AppTheme.NoActionBar"/a\        <item name="android:statusBarColor">#08090C</item>\n        <item name="android:navigationBarColor">#08090C</item>' "$S"
