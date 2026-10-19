@@ -26,3 +26,10 @@ Is folder mein poora app ready hai. Bas APK build karna baqi hai. Yeh kaam GitHu
 ## Naya time ya naya feature
 
 `www/index.html` mein badlao karo, GitHub par dobara upload karo, workflow dobara chalao — naya APK ban jayega.
+
+## Update (v4)
+
+- Alarm/notification sounds ab build ke waqt khud ban jati hain (`scripts/make-sounds.py`), purane silent channels hata diye gaye.
+- Pani ke reminder ab jagne ke time se fixed slots par aate hain (app kholne se reset nahi hote), 7 din aage tak.
+- Naya **Exercise** tab: hafte ke 7 din ka split, set tracker, rest timer, streak, aur roz ka reminder.
+- Naya APK banane ke baad purani app ke upar install kar do; data bacha rahega.
