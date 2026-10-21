@@ -33,3 +33,8 @@ Is folder mein poora app ready hai. Bas APK build karna baqi hai. Yeh kaam GitHu
 - Pani ke reminder ab jagne ke time se fixed slots par aate hain (app kholne se reset nahi hote), 7 din aage tak.
 - Naya **Exercise** tab: hafte ke 7 din ka split, set tracker, rest timer, streak, aur roz ka reminder.
 - Naya APK banane ke baad purani app ke upar install kar do; data bacha rahega.
+
+## Update (v5)
+
+- Pani tab (graph, pattern, suggestion), naya Kaam section (aadat / zaroori / normal, har ek par reminder), Settings mein Awaaz (app / phone default / apni mp3).
+- Apni awaaz `assets/sounds/` mein rakho (naam README.txt mein).
