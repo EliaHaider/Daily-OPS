@@ -1,0 +1,9 @@
+{
+  "appId": "com.dailyops.planner",
+  "appName": "Daily Ops",
+  "webDir": "www",
+  "android": { "backgroundColor": "#08090c" },
+  "plugins": {
+    "LocalNotifications": { "smallIcon": "ic_stat_icon", "iconColor": "#12F7A4" }
+  }
+}
