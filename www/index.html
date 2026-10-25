@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#08090c">
+<title>Daily Ops</title>
+<style>
+:root{
+  --bg:#08090c; --panel:#11141a; --raised:#181c24; --line:#242a35;
+  --ink:#eef0f4; --muted:#8a91a0;
+  --em:#12f7a4; --blue:#2fd3ff; --amber:#ffb84d; --violet:#b389ff; --mag:#ff5ec4; --red:#ff5b6e;
+  --mono:ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.4;color-scheme:dark}
+body{background-image:linear-gradient(rgba(47,211,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(47,211,255,.03) 1px,transparent 1px);background-size:34px 34px;min-height:100vh}
+#app{max-width:520px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 14px) 16px calc(96px + env(safe-area-inset-bottom,0px))}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
+input,textarea,select{font:inherit;color:var(--ink);background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:12px 14px;outline:none;width:100%}
+input:focus,textarea:focus,select:focus{border-color:var(--blue)}
+input[type=time]{width:auto;min-width:130px;font-family:var(--mono);font-weight:600}
+input[type=number]{width:110px;font-family:var(--mono);font-weight:600;text-align:center}
+textarea{resize:none}
+h1,h2,h3{margin:0}
+.hide{display:none!important}
+
+/* header */
+.top{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px}
+.hello{font-size:22px;font-weight:700}
+.date{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:2px;letter-spacing:.04em}
+.page-title{font-family:var(--mono);font-size:20px;font-weight:700;margin:0 0 4px}
+.sub{color:var(--muted);font-size:13px;margin:0 0 14px}
+
+/* cards */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+.big{font-size:20px;font-weight:700;line-height:1.3}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 18px;border-radius:14px;font-weight:700;background:var(--raised);border:1px solid var(--line)}
+.btn:active{transform:scale(.97)}
+.primary{background:var(--em);color:#04120c;border-color:var(--em)}
+.danger{color:var(--red);border-color:rgba(255,91,110,.4);background:rgba(255,91,110,.08)}
+.block{width:100%}
+.row{display:flex;gap:10px;align-items:center}
+.row.between{justify-content:space-between}
+.link{color:var(--blue);font-weight:600;font-size:14px}
+
+/* now card */
+.now{border-color:rgba(18,247,164,.35);background:linear-gradient(180deg,rgba(18,247,164,.07),var(--panel))}
+.now.sleep{border-color:rgba(179,137,255,.4);background:linear-gradient(180deg,rgba(179,137,255,.08),var(--panel))}
+.dots{display:flex;gap:6px;margin:12px 0 14px}
+.dots i{flex:1;height:5px;border-radius:3px;background:var(--line)}
+.dots i.on{background:var(--em)}
+.dots i.cur{background:var(--amber)}
+
+/* water */
+.ring-wrap{position:relative;width:220px;height:220px;margin:4px auto 14px}
+.ring{width:220px;height:220px}
+.ring-bg{fill:none;stroke:var(--line);stroke-width:14}
+.ring-fg{fill:none;stroke:var(--blue);stroke-width:14;stroke-linecap:round;transition:stroke-dashoffset .6s ease}
+.ring-fg.full{stroke:var(--em)}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-center .ml{font-family:var(--mono);font-size:44px;font-weight:800;line-height:1}
+.ring-center .of{font-family:var(--mono);font-size:13px;color:var(--muted);margin-top:4px}
+.ring-center .pct{font-family:var(--mono);font-size:13px;color:var(--blue);margin-top:6px}
+.cup-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:14px;padding:16px;border-radius:18px;background:var(--blue);color:#03141a;font-weight:800;border:0;box-shadow:0 0 24px rgba(47,211,255,.25)}
+.cup-btn:active{transform:scale(.97)}
+.cup-btn .cup{font-size:34px;line-height:1}
+.cup-btn b{display:block;font-size:22px;font-family:var(--mono)}
+.cup-btn small{display:block;font-size:12px;font-weight:600;opacity:.75}
+.cup-btn.pop{animation:pop .35s ease}
+@keyframes pop{40%{transform:scale(1.04)}}
+.pace{margin:12px 0 4px;text-align:center;font-size:14px;font-weight:600}
+.pace.ok{color:var(--em)} .pace.warn{color:var(--amber)}
+
+/* tasks */
+.prog{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin:6px 0 12px}
+.prog i{display:block;height:100%;background:var(--em);transition:width .4s}
+ul{list-style:none;margin:0;padding:0}
+.task{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.task:first-child{border-top:0}
+.task span{flex:1;font-size:15px}
+.task.done span{color:#5d6471;text-decoration:line-through}
+.chk{width:28px;height:28px;border-radius:50%;border:2px solid var(--muted);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#04120c;font-weight:900;font-size:15px}
+.task.done .chk{background:var(--em);border-color:var(--em)}
+.ico{width:36px;height:36px;color:var(--muted);font-size:16px}
+.add{display:flex;gap:8px;margin-top:10px}
+.add input{flex:1}
+.add button{width:52px;background:var(--raised);border:1px solid var(--line);border-radius:12px;font-size:22px;font-weight:700}
+.hd{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.hd h3{font-family:var(--mono);font-size:15px}
+.empty{color:var(--muted);font-size:13px;padding:6px 0}
+
+/* settings */
+.set-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.set-row:first-of-type{border-top:0}
+.set-row .lbl{font-weight:600}
+.set-row .lbl small{display:block;color:var(--muted);font-weight:400;font-size:12px;margin-top:2px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 4px}
+.chip{padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--raised);font-family:var(--mono);font-weight:700;font-size:14px}
+.chip.on{background:var(--blue);color:#03141a;border-color:var(--blue)}
+.sw{position:relative;width:52px;height:30px;flex-shrink:0}
+.sw input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:2}
+.sw i{position:absolute;inset:0;background:var(--line);border-radius:15px;transition:.2s}
+.sw i::after{content:"";position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:.2s}
+.sw input:checked+i{background:var(--em)}
+.sw input:checked+i::after{transform:translateX(22px);background:#04120c}
+.prayer{padding:12px 0;border-top:1px solid var(--line)}
+.prayer:first-of-type{border-top:0}
+.prayer .r1{display:flex;gap:10px;align-items:center}
+.prayer input[type=text]{flex:1;padding:10px 12px}
+.note{background:rgba(255,184,77,.08);border:1px solid rgba(255,184,77,.3);color:var(--amber);border-radius:12px;padding:10px 12px;font-size:13px;margin-top:10px}
+.ok-note{background:rgba(18,247,164,.07);border:1px solid rgba(18,247,164,.3);color:var(--em)}
+.step{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--line)}
+.step:first-of-type{border-top:0}
+.step span{flex:1;font-size:14px}
+.step b{font-family:var(--mono);color:var(--amber);width:20px}
+
+/* nav */
+#nav{position:fixed;left:0;right:0;bottom:0;background:rgba(10,12,16,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom,0px);z-index:20}
+#nav .in{display:flex;width:100%;max-width:520px}
+#nav button{flex:1;padding:10px 0 9px;display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.04em}
+#nav button span{font-size:22px;line-height:1}
+#nav button.on{color:var(--em)}
+
+/* sheet */
+#sheet{position:fixed;inset:0;z-index:50;display:none}
+#sheet.open{display:block}
+.backdrop{position:absolute;inset:0;background:rgba(0,0,0,.65)}
+.panel{position:absolute;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:22px 22px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));max-height:88vh;overflow:auto;animation:up .22s ease}
+@keyframes up{from{transform:translateY(40px);opacity:0}}
+.panel h3{font-size:18px;margin-bottom:6px}
+.panel .btns{display:flex;gap:10px;margin-top:14px}
+.panel .btns .btn{flex:1}
+.panel input{margin-top:8px}
+.bars{display:flex;align-items:flex-end;gap:8px;height:150px;margin:14px 0 6px}
+.bars div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font-family:var(--mono);font-size:10px;color:var(--muted)}
+.bars i{display:block;width:100%;background:var(--blue);border-radius:6px 6px 0 0;min-height:3px}
+.bars i.hit{background:var(--em)}
+#alarm{position:fixed;inset:0;z-index:99;background:rgba(8,9,12,.97);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px}
+#alarm.open{display:flex}
+#alarm .em{font-size:72px;animation:ring 1s infinite}
+@keyframes ring{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(12deg)}}
+#alarm h2{font-size:26px;margin:18px 0 8px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.wk{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:14px}
+.wd{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 0;border-radius:12px;background:var(--raised);border:1px solid var(--line);font-size:10px;position:relative}
+.wd b{font-family:var(--mono);color:var(--muted)}.wd span{font-size:18px}
+.wd.on{border-color:var(--em);background:rgba(18,247,164,.1)}.wd.on b{color:var(--em)}
+.wd.today::after{content:"";position:absolute;top:4px;right:5px;width:6px;height:6px;border-radius:50%;background:var(--amber)}
+.exr{padding:12px 0;border-top:1px solid var(--line)}.exr:first-child{border-top:0}
+.exn{font-weight:700;font-size:16px}
+.sets{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.sb{width:42px;height:42px;border-radius:50%;border:2px solid var(--muted);font-family:var(--mono);font-weight:800;color:var(--muted)}
+.sb.on{background:var(--em);border-color:var(--em);color:#04120c}.sb:disabled{opacity:.4}
+#rest{position:fixed;left:16px;right:16px;bottom:calc(76px + env(safe-area-inset-bottom,0px));max-width:488px;margin:0 auto;z-index:30;background:var(--amber);color:#1a1100;border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;font-weight:800;font-family:var(--mono)}
+.wd small{font-size:9px;color:var(--muted);max-width:100%;overflow:hidden;white-space:nowrap}
+.hbar{display:flex;gap:8px;align-items:center;margin:6px 0}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="main"></div>
+</div>
+<nav id="nav"><div class="in">
+  <button data-act="go" data-p="home"><span>🏠</span>HOME</button>
+  <button data-act="go" data-p="water"><span>💧</span>PANI</button>
+  <button data-act="go" data-p="ex"><span>💪</span>EXERCISE</button>
+  <button data-act="go" data-p="tasks"><span>✅</span>KAAM</button>
+  <button data-act="go" data-p="settings"><span>⚙️</span>SETTINGS</button>
+</div></nav>
+<div id="sheet"></div>
+<div id="rest" class="hide"><span id="restT"></span><button data-act="restStop" style="font-weight:800">Skip ✕</button></div>
+<div id="alarm"><div class="em">⏰</div><h2 id="alarmTitle"></h2><p id="alarmBody" class="muted"></p><button class="btn primary" style="margin-top:22px;min-width:200px" data-act="alarmOff">Theek hai ✓</button></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------------- basics ---------------- */
+const NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+const LN = (NATIVE && window.Capacitor.Plugins) ? window.Capacitor.Plugins.LocalNotifications : null;
+const KEY = 'dailyOps_v3';
+const uid = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'i' + Math.random().toString(36).slice(2);
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const toMin = t => { const p = String(t || '0:0').split(':').map(Number); return (p[0] || 0) * 60 + (p[1] || 0); };
+const fmtMin = m => { m = ((m % 1440) + 1440) % 1440; const h = Math.floor(m / 60), mm = m % 60; return ((h % 12) || 12) + ':' + String(mm).padStart(2, '0') + ' ' + (h < 12 ? 'AM' : 'PM'); };
+const fmtT = t => fmtMin(toMin(t));
+const fmtDate = d => fmtMin(d.getHours() * 60 + d.getMinutes());
+function fmtDur(ms){
+  const m = Math.max(1, Math.round(ms / 60000));
+  if (m < 60) return m + ' min';
+  const h = Math.floor(m / 60), r = m % 60;
+  return h + ' ghante' + (r ? ' ' + r + ' min' : '');
+}
+
+/* ---------------- state ---------------- */
+function defaults(){
+  return {
+    v: 3, day: null,
+    settings: {
+      cup: 200, target: 2500, waterOn: true, waterEvery: 60, snd: {}, weight: 0,
+      wake: '04:30', wakeOn: true, sleep: '21:30', sleepOn: true,
+      prayers: [
+        { id: uid(), name: 'Fajr', time: '05:10', on: true },
+        { id: uid(), name: 'Zuhr + Asr', time: '12:15', on: true },
+        { id: uid(), name: 'Maghrib + Isha', time: '18:00', on: true }
+      ],
+      routine: ['Wudu karke Fajr ki namaz parho', 'Exercise karo (run + planks)', 'Pani piyo — 1 se 2 glass']
+    },
+    water: {},
+    tasks: [],
+    habits: [],
+    win: '', leak: '', audits: [],
+    routine: { day: null, idx: 0, done: false, planAsked: false },
+    ex: { plan: null, log: {}, on: true, time: '16:30' }
+  };
+}
+function load(){
+  const base = defaults();
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) {
+      const p = JSON.parse(raw);
+      const s = Object.assign(base, p);
+      s.settings = Object.assign(defaults().settings, p.settings || {});
+      s.routine = Object.assign(defaults().routine, p.routine || {});
+      s.ex = Object.assign(defaults().ex, p.ex || {});
+      if (!p.tasks) { const cv = (a, pri, rp) => (a || []).map(t => ({ id: t.id || uid(), text: t.text, pri: pri, done: !!t.checked, rep: rp, rem: null })); s.tasks = [].concat(cv(p.nonNeg, 'imp', true), cv(p.core, 'imp', false), cv(p.quick, 'norm', false)); }
+      s.habits = (s.habits || []).map(x => ({ id: x.id || uid(), text: x.text, checked: !!x.checked, rem: (x.rem && x.rem.time) ? x.rem : null, log: x.log || {} }));
+      return s;
+    }
+    const old = localStorage.getItem('dailyOpsState_v2');
+    if (old) {
+      const o = JSON.parse(old);
+      const conv = a => (a || []).map(t => ({ id: t.id || uid(), text: t.text, checked: !!(t.checked || t.status === 'done') }));
+      if (o.nonNeg) base.nonNeg = conv(o.nonNeg);
+      if (o.core) base.core = conv(o.core);
+      if (o.quick) base.quick = conv(o.quick);
+      if (o.habits) base.habits = conv(o.habits);
+      base.audits = (o.auditHistory || []).slice(0, 30);
+    }
+  } catch (e) {}
+  return base;
+}
+const FRESH = (function(){ try { return !localStorage.getItem(KEY); } catch (e) { return false; } })();
+let state = load();
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} if (typeof bkSoon === 'function') bkSoon(); }
+
+function dayKey(d){
+  d = d || new Date();
+  const W = toMin(state.settings.wake);
+  const x = new Date(d.getTime() - W * 60000);
+  return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0');
+}
+function rollover(){
+  const k = dayKey();
+  if (state.day && k <= state.day) return false;
+  state.habits.forEach(t => t.checked = false);
+  state.tasks.forEach(t => { if (t.rep) t.done = false; });
+  state.tasks = state.tasks.filter(t => t.rep || !t.done);
+  state.routine = { day: k, idx: 0, done: false, planAsked: false };
+  state.day = k;
+  const keys = Object.keys(state.water).sort();
+  while (keys.length > 120) delete state.water[keys.shift()];
+  save();
+  return true;
+}
+rollover();
+if (!state.day) { state.day = dayKey(); save(); }
+
+/* ---------------- water ---------------- */
+function wd(){ if (!state.water[state.day]) state.water[state.day] = { ml: 0, log: [] }; return state.water[state.day]; }
+function awakeInfo(now){
+  now = now || new Date();
+  const S = state.settings, W = toMin(S.wake), Sl = toMin(S.sleep);
+  const m = now.getHours() * 60 + now.getMinutes();
+  const dur = (((Sl - W) + 1440) % 1440) || 1440;
+  const el = (m - W + 1440) % 1440;
+  return { awake: el < dur, el, dur, W, Sl, m };
+}
+function expectedMl(){
+  const i = awakeInfo();
+  return i.awake ? Math.round(state.settings.target * i.el / i.dur) : state.settings.target;
+}
+
+/* ---------------- schedule (shared by native + browser) ---------------- */
+const WATER_MSG = [
+  'Ek cup ({ml} ml) pani piyo 💧',
+  'Pani peene ka waqt ho gaya — {ml} ml 🥛',
+  'Sehat ke liye pani! Abhi ek cup piyo 💦',
+  'Dimaag aur jism ko pani chahiye — {ml} ml piyo'
+];
+function buildPlan(now){
+  const S = state.settings, out = [];
+  const y = now.getFullYear(), mo = now.getMonth(), da = now.getDate();
+  const mk = (d, min) => new Date(y, mo, da + d, 0, min, 0, 0);
+  const W = toMin(S.wake), Sl = toMin(S.sleep);
+  for (let d = 0; d < 14; d++) {
+    if (S.wakeOn) out.push({ kind: 'wake', at: mk(d, W), title: '☀️ Uth jao!', body: 'Subah ho gayi — pani piyo, namaz parho, routine shuru karo.', ch: 'alarm', name: 'Jagne ka alarm' });
+    if (S.sleepOn) out.push({ kind: 'sleep', at: mk(d, Sl - 30), title: '🌙 Sone ka waqt qareeb', body: '30 min mein sona hai. Phone side pe rakho aur aaram karo.', ch: 'task', name: 'Sone ki yaad' });
+    S.prayers.forEach(p => {
+      if (p.on) out.push({ kind: 'prayer', at: mk(d, toMin(p.time)), title: '🕌 ' + p.name + ' ka waqt ho gaya', body: 'Wudu karo aur namaz parho.', ch: 'prayer', name: p.name });
+    });
+  }
+  state.tasks.forEach(t => {
+    if (t.done || !t.rem || !t.rem.time) return;
+    const tm = toMin(t.rem.time), ttl = (t.pri === 'imp' ? '❗ Zaroori kaam: ' : '⏰ Yaad dahani: ') + t.text;
+    if (t.rem.date) { const q = t.rem.date.split('-').map(Number); out.push({ kind: 'task', at: new Date(q[0], q[1] - 1, q[2], 0, tm), title: ttl, body: 'Yeh kaam abhi baqi hai.', ch: 'task', name: t.text }); return; }
+    for (let d = 0; d < (t.rep ? 14 : 3); d++) { const at = mk(d, tm); if (!t.rep && at <= now) continue; out.push({ kind: 'task', at: at, title: ttl, body: 'Yeh kaam abhi baqi hai.', ch: 'task', name: t.text }); if (!t.rep) break; }
+  });
+  state.habits.forEach(x => {
+    if (!x.rem || !x.rem.time) return;
+    for (let d = 0; d < 14; d++) { if (d === 0 && x.checked) continue; out.push({ kind: 'habit', at: mk(d, toMin(x.rem.time)), title: '🧠 Aadat: ' + x.text, body: 'Aaj ki aadat poori karo.', ch: 'task', name: x.text }); }
+  });
+  const X = state.ex;
+  if (X.on) for (let d = 0; d < 14; d++) {
+    const pl = exPlan()[mk(d, 0).getDay()];
+    if (pl && !pl.rest) out.push({ kind: 'exercise', at: mk(d, toMin(X.time)), title: '💪 Exercise ka waqt!', body: pl.title + ' — ' + pl.exs.length + ' exercise. Chalo shuru karo!', ch: 'ex', name: 'Exercise' });
+  }
+  if (S.waterOn) {
+    const every = S.waterEvery, dur = (((Sl - W) + 1440) % 1440) || 1440;
+    const w = state.water[state.day], lastT = (w && w.log.length) ? w.log[w.log.length - 1].t : 0;
+    let n = 0;
+    for (let d = -1; d < 7 && n < 200; d++) {
+      for (let k = every; k < dur && n < 200; k += every) {
+        const at = mk(d, W + k);
+        if (at <= now) continue;
+        if (w && w.ml >= S.target && dayKey(at) === state.day) continue;
+        if (lastT && at.getTime() - lastT < every * 30000) continue;
+        out.push({ kind: 'water', at: at, title: '💧 Pani ka waqt!', body: WATER_MSG[n % WATER_MSG.length].split('{ml}').join(S.cup), ch: 'water', name: 'Pani' });
+        n++;
+      }
+    }
+  }
+  return out.filter(x => x.at > now).sort((a, b) => a.at - b.at);
+}
+
+/* ---------------- native notifications ---------------- */
+const SND = {
+  prayer: { n: 'Namaz (Azan)', raw: 'azan_tone', alarm: true },
+  alarm: { n: 'Jagne ka alarm', raw: 'alarm_tone', alarm: true },
+  water: { n: 'Pani ki yaad', raw: 'water_tone', alarm: false },
+  task: { n: 'Kaam / Aadat / Sona', raw: 'task_tone', alarm: false },
+  ex: { n: 'Exercise', raw: 'workout_tone', alarm: false }
+};
+const SP = (NATIVE && window.Capacitor.Plugins) ? window.Capacitor.Plugins.SoundPicker : null;
+function sndCfg(k){ const s = state.settings.snd; return (s && s[k]) || { m: 'app', uri: '', name: '', rev: 0 }; }
+var BK = (NATIVE && window.Capacitor.Plugins) ? window.Capacitor.Plugins.Backup : null, bkTimer = null;
+function hasData(){ return state.tasks.length > 0 || state.habits.length > 0 || Object.keys(state.water).some(k => state.water[k].ml > 0) || Object.keys(state.ex.log).length > 0; }
+function bkSoon(){ if (!BK) return; clearTimeout(bkTimer); bkTimer = setTimeout(() => bkNow(), 4000); }
+async function bkNow(force){
+  if (!BK || (!force && !hasData())) return false;
+  try { await BK.saveBackup({ data: localStorage.getItem(KEY) || '' }); localStorage.setItem('bkAt', String(Date.now())); return true; } catch (e) { return false; }
+}
+async function bkApply(txt){
+  try { const p = JSON.parse(txt); if (!p || typeof p !== 'object' || !p.settings) return false; localStorage.setItem(KEY, txt); state = load(); rollover(); save(); render(); sched(); return true; } catch (e) { return false; }
+}
+function info(t, s){ openSheet('<h3>' + t + '</h3><p class="sub">' + s + '</p><div class="btns"><button class="btn primary" data-act="closeSheet">Theek hai</button></div>'); }
+const AL = (NATIVE && window.Capacitor.Plugins) ? window.Capacitor.Plugins.DailyAlarm : null;
+function sndSpec(k){ const c = sndCfg(k), D = SND[k]; return c.m === 'custom' ? c.uri : c.m === 'default' ? (D.alarm ? 'default_alarm' : 'default_notif') : 'raw:' + D.raw; }
+const fmtKey = k => { const q = k.split('-').map(Number); return new Date(q[0], q[1] - 1, q[2]).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }); };
+const chId = k => 'c_' + k + '_' + (sndCfg(k).rev || 0);
+let permInfo = { notif: 'unknown', exact: 'unknown' };
+let schedInfo = { n: 0, err: '' };
+let schedBusy = false, schedAgain = false, schedTimer = null;
+async function ensureChannels(){
+  ['alarm_v1', 'water_v1', 'sleep_v1', 'alarm_v2', 'water_v2', 'sleep_v2', 'ex_v2'].forEach(i => { try { LN.deleteChannel({ id: i }).catch(() => {}); } catch (e) {} });
+  for (const k of Object.keys(SND)) {
+    const c = sndCfg(k), D = SND[k], imp = D.alarm ? 5 : 4;
+    try {
+      if (SP) await SP.makeChannel({ id: chId(k), name: D.n, importance: imp, alarm: D.alarm, uri: sndSpec(k) });
+      else await LN.createChannel({ id: chId(k), name: D.n, description: D.n, importance: imp, visibility: 1, vibration: true, lights: true, sound: D.raw + '.wav' });
+    } catch (e) {}
+  }
+}
+async function sndApply(k, cfg){
+  if (LN) { try { await LN.deleteChannel({ id: chId(k) }); } catch (e) {} }
+  const o = sndCfg(k); state.settings.snd = state.settings.snd || {};
+  state.settings.snd[k] = Object.assign({ m: 'app', uri: '', name: '' }, cfg, { rev: (o.rev || 0) + 1 });
+  save(); render(); sched();
+}
+async function sndMode(k, m){
+  if (m !== 'custom') return sndApply(k, { m: m });
+  if (!SP) { openSheet('<h3>Sirf APK mein</h3><p class="sub">Apni mp3 chunna sirf installed app mein chalta hai.</p><div class="btns"><button class="btn primary" data-act="closeSheet">Theek hai</button></div>'); render(); return; }
+  try { const r = await SP.pick(); await sndApply(k, { m: 'custom', uri: r.uri, name: r.name }); } catch (e) { render(); }
+}
+async function ensurePerms(ask){
+  if (!LN) return;
+  try {
+    let p = await LN.checkPermissions();
+    if (p.display !== 'granted' && ask) p = await LN.requestPermissions();
+    permInfo.notif = p.display;
+  } catch (e) { permInfo.notif = 'error'; }
+  try {
+    if (LN.checkExactNotificationSetting) {
+      let x = await LN.checkExactNotificationSetting();
+      if (x.exact_alarm !== 'granted' && ask && (ask === 'force' || !localStorage.getItem('exAsked'))) {
+        try { localStorage.setItem('exAsked', '1'); } catch (e) {}
+        await LN.changeExactNotificationSetting();
+        x = await LN.checkExactNotificationSetting();
+      }
+      permInfo.exact = x.exact_alarm;
+    }
+  } catch (e) {}
+}
+async function schedNative(){
+  const plan = buildPlan(new Date()).sort((a, b) => a.at - b.at).slice(0, 400);
+  try {
+    await ensureChannels();
+    try { const pend = await LN.getPending(); if (pend.notifications && pend.notifications.length) await LN.cancel({ notifications: pend.notifications.map(n => ({ id: n.id })) }); } catch (e) {}
+    if (AL) {
+      const rs = state.settings.ringSec || 30;
+      const list = plan.map((x, i) => ({ id: i + 1, at: x.at.getTime(), title: x.title, body: x.body, cid: chId(x.ch), snd: sndSpec(x.ch), ring: (x.kind === 'wake' || x.kind === 'prayer') ? rs : 0 }));
+      await AL.setAll({ items: list });
+      schedInfo = { n: list.length, err: '' };
+    } else {
+      let id = 1;
+      const list = plan.map(x => ({ id: id++, title: x.title, body: x.body, schedule: { at: x.at, allowWhileIdle: true }, channelId: chId(x.ch), smallIcon: 'ic_stat_icon', iconColor: '#12F7A4', extra: { kind: x.kind } }));
+      for (let i = 0; i < list.length; i += 50) await LN.schedule({ notifications: list.slice(i, i + 50) });
+      schedInfo = { n: list.length, err: '' };
+    }
+  } catch (e) {
+    schedInfo = { n: 0, err: String((e && e.message) || e) };
+  }
+}
+async function alStatus(){ if (!AL) return; try { const s = await AL.status(); permInfo.bat = s.battery; render(); } catch (e) {} }
+
+/* ---------------- browser fallback (tab open only) ---------------- */
+let webQueue = [], actx = null, alarmLoop = null;
+function schedWeb(){ webQueue = buildPlan(new Date()); }
+function webTick(){
+  const now = Date.now();
+  while (webQueue.length && webQueue[0].at.getTime() <= now) {
+    const it = webQueue.shift();
+    if (now - it.at.getTime() < 120000) showAlarm(it.title, it.body, it.kind !== 'water');
+  }
+}
+function beepOnce(){
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    [660, 880, 1100].forEach((f, i) => {
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      const t = actx.currentTime + i * 0.35;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.4, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.33);
+      o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + 0.35);
+    });
+  } catch (e) {}
+}
+function showAlarm(title, body, loud){
+  $('#alarmTitle').textContent = title; $('#alarmBody').textContent = body;
+  $('#alarm').classList.add('open');
+  try { if (navigator.vibrate) navigator.vibrate([400, 200, 400]); } catch (e) {}
+  try { if ('Notification' in window && Notification.permission === 'granted') new Notification(title, { body }); } catch (e) {}
+  clearInterval(alarmLoop); beepOnce();
+  alarmLoop = setInterval(beepOnce, loud ? 2000 : 600000);
+}
+function alarmOff(){ clearInterval(alarmLoop); $('#alarm').classList.remove('open'); }
+
+function sched(){
+  clearTimeout(schedTimer);
+  schedTimer = setTimeout(async () => {
+    if (!NATIVE) { schedWeb(); return; }
+    if (schedBusy) { schedAgain = true; return; }
+    schedBusy = true;
+    do { schedAgain = false; await schedNative(); } while (schedAgain);
+    schedBusy = false;
+    if (page === 'settings' && !isSheetOpen()) render();
+  }, 600);
+}
+
+/* ---------------- sheets ---------------- */
+let sheetCancel = null;
+const isSheetOpen = () => $('#sheet').classList.contains('open');
+function openSheet(html){ $('#sheet').innerHTML = '<div class="backdrop" data-act="closeSheet"></div><div class="panel">' + html + '</div>'; $('#sheet').classList.add('open'); }
+function closeSheet(){
+  $('#sheet').classList.remove('open'); $('#sheet').innerHTML = '';
+  if (sheetCancel) { const f = sheetCancel; sheetCancel = null; f(); }
+}
+function askText(title, val, ph){
+  return new Promise(res => {
+    openSheet('<h3>' + esc(title) + '</h3><input id="shIn" type="text" autocomplete="off" placeholder="' + esc(ph || '') + '" value="' + esc(val || '') + '"><div class="btns"><button class="btn" id="shNo">Cancel</button><button class="btn primary" id="shYes">Save</button></div>');
+    sheetCancel = () => res(null);
+    const inp = $('#shIn');
+    setTimeout(() => inp.focus(), 60);
+    const ok = () => { const v = inp.value.trim(); sheetCancel = null; closeSheet(); res(v || null); };
+    $('#shYes').onclick = ok;
+    $('#shNo').onclick = closeSheet;
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') ok(); });
+  });
+}
+function askConfirm(msg){
+  return new Promise(res => {
+    openSheet('<h3>' + esc(msg) + '</h3><div class="btns"><button class="btn" id="shNo">Nahi</button><button class="btn danger" id="shYes">Haan, karo</button></div>');
+    sheetCancel = () => res(false);
+    $('#shYes').onclick = () => { sheetCancel = null; closeSheet(); res(true); };
+    $('#shNo').onclick = closeSheet;
+  });
+}
+function openPlan(){
+  openSheet('<h3>📋 Aaj ka plan kia hai?</h3><p class="sub">Aaj ke sabse zaroori kaam likho (1 se 3). Din random nahi jaana chahiye.</p>' +
+    '<input class="plIn" type="text" placeholder="Kaam 1" autocomplete="off"><input class="plIn" type="text" placeholder="Kaam 2 (optional)" autocomplete="off"><input class="plIn" type="text" placeholder="Kaam 3 (optional)" autocomplete="off">' +
+    '<div class="btns"><button class="btn" id="plNo">Baad mein</button><button class="btn primary" id="plYes">Plan set karo</button></div>');
+  setTimeout(() => { const i = document.querySelector('.plIn'); if (i) i.focus(); }, 80);
+  $('#plNo').onclick = closeSheet;
+  $('#plYes').onclick = () => {
+    const vals = [...document.querySelectorAll('.plIn')].map(i => i.value.trim()).filter(Boolean);
+    if (!vals.length) { closeSheet(); return; }
+    vals.forEach(v => state.tasks.push({ id: uid(), text: v, pri: 'imp', done: false, rep: false, rem: null }));
+    state.routine.planAsked = true; save(); closeSheet(); go('home');
+  };
+}
+function openHistory(){
+  const parts = state.day.split('-').map(Number);
+  let bars = '';
+  const names = ['Itwar', 'Peer', 'Mangal', 'Budh', 'Jumerat', 'Jumma', 'Hafta'];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(parts[0], parts[1] - 1, parts[2] - i);
+    const k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const ml = (state.water[k] && state.water[k].ml) || 0;
+    const h = clamp(Math.round(ml / Math.max(state.settings.target, 1) * 100), 0, 100);
+    bars += '<div><span>' + ml + '</span><i class="' + (ml >= state.settings.target ? 'hit' : '') + '" style="height:' + h + '%"></i><span>' + names[d.getDay()].slice(0, 3) + '</span></div>';
+  }
+  openSheet('<h3>📊 Pichle 7 din ka pani</h3><p class="sub">Hara = target poora. Target: ' + state.settings.target + ' ml</p><div class="bars">' + bars + '</div><div class="btns"><button class="btn" data-act="closeSheet">Band karo</button></div>');
+}
+
+/* ---------------- pages ---------------- */
+let page = 'home';
+const LISTS = [
+  { k: 'nonNeg', t: '🎯 Zaroori kaam', h: 'Jo har haal mein karne hain (roz dobara aate hain)', ph: '+ zaroori kaam likho…' },
+  { k: 'core', t: '⚡ Aaj ke kaam', h: 'Business / kaam. Poore hue kaam agle din hat jate hain', ph: '+ kaam likho…' },
+  { k: 'quick', t: '🧹 Chhote kaam', h: 'Roti lana, nakhun katna…', ph: '+ chhota kaam…' },
+  { k: 'habits', t: '🧠 Aadatein', h: 'Gussa control, jaldi uthna… (roz dobara aati hain)', ph: '+ aadat likho…' }
+];
+function greeting(){
+  const h = new Date().getHours();
+  return h < 5 ? 'Raat ka waqt 🌙' : h < 12 ? 'Subah bakhair ☀️' : h < 17 ? 'Dopehar bakhair 🌤️' : h < 21 ? 'Shaam bakhair 🌆' : 'Raat bakhair 🌙';
+}
+function nextAlarm(){
+  const it = buildPlan(new Date()).find(x => x.kind === 'wake' || x.kind === 'prayer');
+  return it || null;
+}
+
+function nowCard(){
+  const info = awakeInfo(), S = state.settings, R = state.routine;
+  if (!info.awake) {
+    const wakeAt = buildPlan(new Date()).find(x => x.kind === 'wake');
+    return '<section class="card now sleep"><div class="eyebrow">Abhi</div><div class="big">😴 Sone ka waqt hai</div><p class="muted small" style="margin:8px 0 0">Phone side pe rakho. Subah ' + fmtT(S.wake) + ' par jagna hai' + (wakeAt ? ' (' + fmtDur(wakeAt.at - new Date()) + ' baad)' : '') + '.</p></section>';
+  }
+  const steps = S.routine;
+  if (!R.done && steps.length && info.el <= 240) {
+    const i = clamp(R.idx, 0, steps.length - 1);
+    let dots = '';
+    steps.forEach((_, j) => { dots += '<i class="' + (j < i ? 'on' : j === i ? 'cur' : '') + '"></i>'; });
+    return '<section class="card now"><div class="eyebrow">☀️ Subah ka routine · step ' + (i + 1) + '/' + steps.length + '</div><div class="big">' + esc(steps[i]) + '</div><div class="dots">' + dots + '</div><button class="btn primary block" data-act="stepDone">Ho gaya ✓</button><div style="text-align:center;margin-top:10px"><button class="link" data-act="skipRoutine">Routine skip karo</button></div></section>';
+  }
+  if (!R.planAsked && (R.done || info.el > 240)) {
+    return '<section class="card now"><div class="eyebrow">Abhi</div><div class="big">📋 Aaj ka plan kia hai?</div><p class="muted small" style="margin:8px 0 14px">Din shuru karne se pehle apne zaroori kaam likh lo.</p><button class="btn primary block" data-act="plan">Plan likho</button></section>';
+  }
+  let line, icon = '✅';
+  const gap = expectedMl() - wd().ml;
+  const pendNN = state.tasks.find(t => !t.done && t.pri === 'imp'), pendCore = state.tasks.find(t => !t.done);
+  const toSleep = (info.dur - info.el);
+  if (gap >= S.cup && wd().ml < S.target) { icon = '💧'; line = 'Pani piyo — ' + gap + ' ml peeche ho'; }
+  else if (pendNN) { icon = '🎯'; line = pendNN.text; }
+  else if (pendCore) { icon = '⚡'; line = pendCore.text; }
+  else line = 'Sab theek chal raha hai. Shabash!';
+  return '<section class="card now"><div class="eyebrow">Abhi karna hai</div><div class="big">' + icon + ' ' + esc(line) + '</div></section>';
+}
+
+function pageHome(){
+  const S = state.settings, w = wd(), pct = Math.round(w.ml / Math.max(S.target, 1) * 100);
+  const C = 578, off = C - C * clamp(w.ml / Math.max(S.target, 1), 0, 1);
+  const gap = expectedMl() - w.ml;
+  let pace;
+  if (w.ml >= S.target) pace = '<div class="pace ok">🎉 Aaj ka target poora! Mashallah</div>';
+  else if (gap >= S.cup) pace = '<div class="pace warn">' + (w.ml === 0 ? 'Abhi tak ' + expectedMl() + ' ml hona chahiye — pehla cup piyo!' : 'Abhi tak ' + expectedMl() + ' ml hona chahiye — ' + gap + ' ml peeche') + '</div>';
+  else pace = '<div class="pace ok">Bilkul theek chal rahe ho 👍</div>';
+  const na = nextAlarm();
+  const alarmCard = na
+    ? '<section class="card"><div class="eyebrow">⏰ Agla alarm</div><div class="row between"><div><div class="big">' + esc(na.kind === 'wake' ? 'Jagna' : na.name) + '</div><div class="muted small">' + fmtDate(na.at) + ' · ' + fmtDur(na.at - new Date()) + ' baad</div></div><button class="link" data-act="go" data-p="settings">Badlo</button></div></section>'
+    : '<section class="card"><div class="eyebrow">⏰ Alarm</div><div class="muted small">Koi alarm on nahi. Settings mein set karo.</div></section>';
+  const all = state.tasks, done = all.filter(t => t.done).length;
+  const pend = all.filter(t => !t.done).sort((a, b) => (a.pri === 'imp' ? 0 : 1) - (b.pri === 'imp' ? 0 : 1));
+  const show = pend.slice(0, 4);
+  const tasks = '<section class="card"><div class="row between"><div class="eyebrow" style="margin:0">Aaj ke kaam</div><button class="link" data-act="go" data-p="tasks">Sab dekho →</button></div>' +
+    '<div class="prog"><i style="width:' + (all.length ? Math.round(done / all.length * 100) : 0) + '%"></i></div>' +
+    (show.length ? '<ul>' + show.map(x => taskRow(x)).join('') + '</ul>' + (pend.length > 4 ? '<div class="muted small">+ ' + (pend.length - 4) + ' aur…</div>' : '') : '<div class="empty">' + (all.length ? 'Sab kaam ho gaye ✓' : 'Koi kaam nahi — Kaam tab mein add karo') + '</div>') + '</section>';
+  return '<div class="top"><div><div class="hello">' + greeting() + '</div><div class="date">' + new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase() + '</div></div></div>' +
+    nowCard() +
+    '<section class="card"><div class="eyebrow">💧 Aaj ka pani</div>' +
+    '<div class="ring-wrap"><svg class="ring" viewBox="0 0 220 220"><circle class="ring-bg" cx="110" cy="110" r="92"/><circle class="ring-fg ' + (w.ml >= S.target ? 'full' : '') + '" cx="110" cy="110" r="92" stroke-dasharray="' + C + '" stroke-dashoffset="' + off + '" transform="rotate(-90 110 110)"/></svg>' +
+    '<div class="ring-center"><div class="ml">' + w.ml + '</div><div class="of">/ ' + S.target + ' ml</div><div class="pct">' + pct + '%</div></div></div>' +
+    '<button class="cup-btn" id="cupBtn" data-act="drink"><span class="cup">🥛</span><span><b>+' + S.cup + ' ml</b><small>Pani piya? Yahan tap karo</small></span></button>' +
+    pace +
+    '<div class="row" style="margin-top:10px"><button class="btn block" data-act="undo">↩ Undo</button><button class="btn block" data-act="history">📊 7 din</button></div></section>' +
+    alarmCard + exHomeCard() + tasks;
+}
+
+function remTxt(t){ const r = t.rem; return r && r.time ? '<span class="muted small" style="font-family:var(--mono)">🔔 ' + (r.date ? r.date.slice(5) + ' ' : '') + fmtT(r.time) + '</span>' : ''; }
+function taskRow(t, full){
+  return '<li class="task ' + (t.done ? 'done' : '') + '"><button class="chk" data-act="tTog" data-id="' + t.id + '">' + (t.done ? '✓' : '') + '</button><span data-act="tTog" data-id="' + t.id + '">' + esc(t.text) + (t.rep ? ' <small class="muted">(roz)</small>' : '') + '</span>' + remTxt(t) +
+    (full ? '<button class="ico" data-act="tEdit" data-id="' + t.id + '">✎</button><button class="ico" data-act="tDel" data-id="' + t.id + '">🗑</button>' : '') + '</li>';
+}
+function hStreak(x){ let n = 0, i = x.checked ? 0 : -1; while (x.log[dk(i)]) { n++; i--; } return n; }
+function hBest(x){
+  let b = 0, c = 0, prev = null;
+  Object.keys(x.log).sort().forEach(k => { const q = k.split('-').map(Number), d = Math.round(new Date(q[0], q[1] - 1, q[2]).getTime() / 86400000); c = (prev !== null && d - prev === 1) ? c + 1 : 1; prev = d; if (c > b) b = c; });
+  return b;
+}
+function hRow(x){
+  const s = hStreak(x), risk = s > 0 && !x.checked;
+  return '<li class="task ' + (x.checked ? 'done' : '') + '" style="flex-wrap:wrap"><button class="chk" data-act="hTog" data-id="' + x.id + '">' + (x.checked ? '✓' : '') + '</button><span data-act="hTog" data-id="' + x.id + '">' + esc(x.text) + '</span>' + remTxt(x) +
+    '<button class="ico" data-act="hEdit" data-id="' + x.id + '">✎</button><button class="ico" data-act="hDel" data-id="' + x.id + '">🗑</button>' +
+    '<div style="flex-basis:100%;display:flex;gap:10px;align-items:center;margin:4px 0 0 36px"><span style="font-family:var(--mono);font-weight:800;font-size:16px;color:' + (s ? 'var(--amber)' : 'var(--muted)') + '">🔥 ' + s + '</span><span class="muted small">' + (risk ? 'Aaj tick karo warna streak 0 ho jayegi!' : s ? 'Streak jaari hai' : 'Tick karke streak shuru karo') + ' · Best ' + Math.max(hBest(x), s) + '</span></div></li>';
+}
+function pageTasks(){
+  const sec = (title, hint, items, addAct, fn) => '<section class="card"><div class="hd"><h3>' + title + '</h3><span class="muted small" style="margin-left:auto">' + items.filter(x => x.done || x.checked).length + '/' + items.length + '</span></div><p class="muted small" style="margin:0 0 6px">' + hint + '</p>' + (items.length ? '<ul>' + items.map(fn).join('') + '</ul>' : '<div class="empty">— abhi kuch nahi —</div>') + '<button class="btn block" style="margin-top:10px" data-act="' + addAct + '">+ Add karo</button></section>';
+  return '<h1 class="page-title">✅ Kaam</h1><p class="sub">Har aadat ya kaam par apni marzi ka reminder (time / din) laga sakte ho.</p>' +
+    sec('🧠 Aadatein', 'Roz dobara aati hain. Tap karke tick karo.', state.habits, 'hAdd', hRow) +
+    sec('🎯 Zaroori kaam', 'Jo har haal mein karne hain', state.tasks.filter(t => t.pri === 'imp'), 'tAddImp', t => taskRow(t, true)) +
+    sec('🧹 Normal kaam', 'Chhote aur aam kaam', state.tasks.filter(t => t.pri !== 'imp'), 'tAddNorm', t => taskRow(t, true));
+}
+function taskForm(o, kind, cb){
+  const r = o.rem || {}, tk = kind === 'task';
+  openSheet('<h3>' + (o.text ? 'Badlo' : (tk ? 'Naya kaam' : 'Nayi aadat')) + '</h3><input id="tT" placeholder="Likho…" value="' + esc(o.text) + '"><div class="lbl" style="margin-top:12px">🔔 Reminder ka time (khali = reminder nahi)</div><input id="tR" type="time" value="' + (r.time || '') + '" style="width:100%">' +
+    (tk ? '<div class="lbl" style="margin-top:12px">Kis din? (khali = agla time aane par)</div><input id="tD" type="date" value="' + (r.date || '') + '" style="width:100%"><label class="row" style="margin-top:12px"><input id="tP" type="checkbox" style="width:22px;height:22px;padding:0" ' + (o.rep ? 'checked' : '') + '> Roz dohrao</label>' : '') +
+    '<div class="btns"><button class="btn" data-act="closeSheet">Cancel</button><button class="btn primary" id="tOk">Save</button></div>');
+  $('#tOk').onclick = () => { const v = $('#tT').value.trim(); if (!v) return; o.text = v; const tm = $('#tR').value; o.rem = tm ? { time: tm, date: tk ? $('#tD').value : '' } : null; if (tk) o.rep = $('#tP').checked; closeSheet(); cb(o); };
+}
+/* ---------------- pani page ---------------- */
+function wLast(n){ const a = []; for (let i = n - 1; i >= 0; i--) { const k = dk(-i), w = state.water[k]; a.push({ k: k, ml: w ? w.ml : 0 }); } return a; }
+function barSvg(a, tgt, lab, tip){
+  const W = 320, H = 120, bw = W / a.length, mx = Math.max(tgt || 0, ...a.map(x => x.ml), 1);
+  let s = '<svg viewBox="0 0 ' + W + ' ' + (H + 16) + '" style="width:100%;display:block">';
+  a.forEach((x, i) => {
+    const bh = Math.round(x.ml / mx * H), l = lab(i, x);
+    s += '<rect x="' + (i * bw + bw * .15) + '" y="' + (H - bh) + '" width="' + (bw * .7) + '" height="' + bh + '" rx="3" fill="' + (tgt && x.ml >= tgt ? 'var(--em)' : 'var(--blue)') + '"/>';
+    if (tip) s += '<rect x="' + (i * bw) + '" y="0" width="' + bw + '" height="' + (H + 16) + '" fill="transparent" data-act="barTip" data-t="' + esc(tip(i, x)) + '" style="cursor:pointer"/>';
+    if (l) s += '<text x="' + (i * bw + bw / 2) + '" y="' + (H + 12) + '" font-size="9" text-anchor="middle" fill="var(--muted)">' + l + '</text>';
+  });
+  if (tgt) { const ty = H - Math.round(tgt / mx * H); s += '<line x1="0" x2="' + W + '" y1="' + ty + '" y2="' + ty + '" stroke="var(--amber)" stroke-dasharray="4 4"/>'; }
+  return s + '</svg>';
+}
+function pageWater(){
+  const S = state.settings, w = wd(), tgt = S.target, rem = Math.max(0, tgt - w.ml), cups = Math.ceil(rem / S.cup), gap = expectedMl() - w.ml;
+  const wk = wLast(7), mo = wLast(30), act = mo.filter(x => x.ml > 0), hit = mo.filter(x => x.ml >= tgt).length;
+  const avg = act.length ? Math.round(act.reduce((s, x) => s + x.ml, 0) / act.length) : 0, best = Math.max(0, ...mo.map(x => x.ml));
+  let st = 0, i = w.ml >= tgt ? 0 : -1; while ((state.water[dk(i)] || { ml: 0 }).ml >= tgt) { st++; i--; }
+  const H = new Array(24).fill(0); let tot = 0;
+  Object.keys(state.water).forEach(k => (state.water[k].log || []).forEach(l => { H[new Date(l.t).getHours()] += l.ml; tot += l.ml; }));
+  const W0 = Math.floor(toMin(S.wake) / 60), dur = (((toMin(S.sleep) - toMin(S.wake)) + 1440) % 1440) || 1440, hrs = [];
+  for (let k = 0; k * 60 < dur - 120; k++) hrs.push((W0 + k) % 24);
+  const peak = H.map((v, k) => [k, v]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  const low = hrs.map(k => [k, H[k]]).sort((a, b) => a[1] - b[1]).slice(0, 3).map(x => x[0]).sort((a, b) => ((a - W0 + 24) % 24) - ((b - W0 + 24) % 24));
+  const hl = hrs.map(k => ({ ml: H[k], k: k }));
+  let h = '<h1 class="page-title">💧 Pani</h1><p class="sub">Aaj ka hisaab, hafte / mahine ke graph aur aapki aadat.</p>';
+  const pct = clamp(Math.round(w.ml / Math.max(tgt, 1) * 100), 0, 100), nowMl = expectedMl();
+  h += '<section class="card"><div class="eyebrow">Aaj ka hisaab</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;margin:8px 0 12px"><div><div class="muted small">Piya</div><div class="big" style="color:var(--blue)">' + w.ml + '</div><div class="muted small">ml</div></div><div><div class="muted small">Baqi</div><div class="big" style="color:var(--amber)">' + rem + '</div><div class="muted small">ml</div></div><div><div class="muted small">Target</div><div class="big">' + tgt + '</div><div class="muted small">ml</div></div></div>' +
+    '<div class="prog"><i style="width:' + pct + '%"></i></div><div class="muted small" style="margin-top:6px">' + pct + '% poora' + (rem ? ' · ' + cups + ' cup (' + S.cup + ' ml) aur' : '') + '</div>' +
+    '<div class="note ' + (gap >= S.cup ? '' : 'ok-note') + '" style="margin:10px 0 0">' + (w.ml >= tgt ? 'Mashallah! Aaj ka target poora ho gaya.' : gap >= S.cup ? 'Is waqt tak ' + nowMl + ' ml ho jana chahiye tha. Aap ' + gap + ' ml peeche ho — ek cup abhi piyo.' : 'Aap sahi raftaar par ho. Is waqt tak ' + nowMl + ' ml chahiye tha.') + '</div>' +
+    '<div class="row" style="margin-top:12px"><button class="btn primary block" data-act="drink">+' + S.cup + ' ml</button><button class="btn block" data-act="wAdd">Apni miqdar</button><button class="btn block" data-act="undo">Undo</button></div>' +
+    (w.log.length ? '<div style="margin-top:12px">' + w.log.slice(-6).reverse().map(l => '<div class="hbar muted small"><span style="font-family:var(--mono)">' + fmtDate(new Date(l.t)) + '</span><span>' + l.ml + ' ml</span></div>').join('') + '</div>' : '') + '</section>';
+  h += '<section class="card"><div class="hd"><h3>Pichhle 7 din</h3></div>' + barSvg(wk, tgt, (n, x) => { const q = x.k.split('-').map(Number); return new Date(q[0], q[1] - 1, q[2]).toLocaleDateString('en-GB', { weekday: 'short' }); }, (n, x) => fmtKey(x.k) + ': ' + x.ml + ' ml — ' + (x.ml >= tgt ? 'target poora' : Math.round(x.ml / tgt * 100) + '% target')) + '<div class="tip muted small" style="min-height:18px;margin-top:6px">Kisi bar par tap karo — us din ka pani dikhega.</div>' + '<div class="muted small">Peeli line = target. Hara bar = target poora.</div></section>';
+  h += '<section class="card"><div class="hd"><h3>Pichhle 30 din</h3></div>' + barSvg(mo, tgt, (n, x) => (n % 5 === 0 ? x.k.slice(8) : ''), (n, x) => fmtKey(x.k) + ': ' + x.ml + ' ml — ' + (x.ml >= tgt ? 'target poora' : Math.round(x.ml / tgt * 100) + '% target')) + '<div class="tip muted small" style="min-height:18px;margin-top:6px">Kisi bar par tap karo — us din ka pani dikhega.</div>' +
+    '<div class="row between" style="margin-top:10px;flex-wrap:wrap"><span class="muted small">Average: <b>' + avg + ' ml</b></span><span class="muted small">Target poora: <b>' + hit + ' din</b></span><span class="muted small">Best: <b>' + best + ' ml</b></span><span class="muted small">Streak: <b>' + st + ' din</b></span></div></section>';
+  h += '<section class="card"><div class="hd"><h3>Kis waqt zyada peete ho</h3></div>';
+  if (tot < S.cup * 3) h += '<div class="empty">Kuch din pani log karo, phir yahan aapka pattern aur suggestion aayega.</div>';
+  else h += barSvg(hl, 0, (n, x) => (n % 2 === 0 ? String(x.k) : ''), (n, x) => fmtMin(x.k * 60) + ': ' + x.ml + ' ml (' + Math.round(x.ml / tot * 100) + '% of total)') + '<div class="tip muted small" style="min-height:18px;margin-top:6px">Kisi bar par tap karo — us din ka pani dikhega.</div>' + '<div class="muted small" style="margin-top:6px">Sabse zyada: ' + peak.map(x => '<b>' + fmtMin(x[0] * 60) + '</b> (' + Math.round(x[1] / tot * 100) + '%)').join(', ') + '</div>' +
+    '<div class="note ok-note" style="margin-top:10px">Is waqt kam peete ho: <b>' + low.map(k => fmtMin(k * 60)).join(', ') + '</b>. In mein ek ek cup add karo taake din bhar balance rahe.</div>';
+  h += '</section><section class="card"><div class="hd"><h3>Tips</h3></div><div class="muted small" style="line-height:1.7">• Uthte hi 1-2 glass pani piyo.<br>• Khane se 30 min pehle aur 1 ghante baad piyo, khane ke beech kam.<br>• Exercise se pehle, beech aur baad mein piyo.<br>• Sone se 2 ghante pehle pani kam karo taake neend na tute.<br>• Peshab ka rang halka peela ho to pani theek hai, gehra ho to zyada piyo.</div></section>';
+  h += '<section class="card"><div class="hd"><h3>Target</h3></div><div class="set-row"><div class="lbl">Aapka wazan (kg)<small>Roz ka andaza: 35 ml × wazan</small></div><input type="number" inputmode="numeric" value="' + (S.weight || '') + '" data-set="weight" style="width:90px"></div>' +
+    (S.weight ? '<div class="muted small">Andaza: <b>' + Math.round(S.weight * 35 / 50) * 50 + ' ml</b> <button class="link" data-act="wTarget">Yeh target banao</button></div>' : '') + '<div class="muted small" style="margin-top:8px">Reminder ka waqt badalna ho to Settings → Pani mein jao.</div></section>';
+  return h;
+}
+
+function sw(setKey, checked, extra){
+  return '<label class="sw"><input type="checkbox" data-set="' + setKey + '" ' + (extra || '') + (checked ? ' checked' : '') + '><i></i></label>';
+}
+function pageSettings(){
+  const S = state.settings;
+  const sleepDur = (((toMin(S.wake) - toMin(S.sleep)) + 1440) % 1440);
+  const sh = Math.floor(sleepDur / 60), sm = sleepDur % 60;
+  const cups = [100, 150, 200, 250, 300, 500];
+  let h = '<h1 class="page-title">⚙️ Settings</h1><p class="sub">Sab kuch yahan se apni marzi se set karo.</p>';
+
+  // water
+  h += '<section class="card"><div class="hd"><h3>💧 Pani</h3></div>' +
+    '<div class="set-row" style="display:block"><div class="lbl">Cup / glass ka size<small>Home pe yehi size ka button aayega</small></div>' +
+    '<div class="chips">' + cups.map(c => '<button class="chip ' + (S.cup === c ? 'on' : '') + '" data-act="cup" data-v="' + c + '">' + c + ' ml</button>').join('') + '</div>' +
+    '<div class="row" style="margin-top:8px"><span class="muted small">Ya apna size:</span><input type="number" inputmode="numeric" min="10" max="2000" step="10" value="' + S.cup + '" data-set="cup"><span class="muted small">ml</span></div></div>' +
+    '<div class="set-row"><div class="lbl">Roz ka target<small>Kitna pani peena hai</small></div><div class="row"><input type="number" inputmode="numeric" min="500" max="10000" step="100" value="' + S.target + '" data-set="target"><span class="muted small">ml</span></div></div>' +
+    '<div class="set-row"><div class="lbl">Pani ki yaad<small>Jagne se sone tak</small></div>' + sw('waterOn', S.waterOn) + '</div>' +
+    '<div class="set-row"><div class="lbl">Har kitni der baad yaad dilaye</div><select data-set="waterEvery" style="width:auto">' + [30, 45, 60, 90, 120].map(v => '<option value="' + v + '" ' + (S.waterEvery === v ? 'selected' : '') + '>' + (v < 60 ? v + ' min' : v === 60 ? '1 ghanta' : v === 90 ? '1.5 ghante' : '2 ghante') + '</option>').join('') + '</select></div></section>';
+
+  // sleep
+  h += '<section class="card"><div class="hd"><h3>🌙 Jagna &amp; Sona</h3></div>' +
+    '<div class="set-row"><div class="lbl">Subah jagne ka time</div><input type="time" value="' + S.wake + '" data-set="wake"></div>' +
+    '<div class="set-row"><div class="lbl">Jagne ka alarm</div>' + sw('wakeOn', S.wakeOn) + '</div>' +
+    '<div class="set-row"><div class="lbl">Raat sone ka time<small>Is ke baad pani ke reminder nahi aayenge</small></div><input type="time" value="' + S.sleep + '" data-set="sleep"></div>' +
+    '<div class="set-row"><div class="lbl">Sone se 30 min pehle yaad<small>Sone ki tayyari ke liye</small></div>' + sw('sleepOn', S.sleepOn) + '</div>' +
+    '<div class="note ' + (sleepDur >= 420 ? 'ok-note' : '') + '">😴 Neend: ' + sh + ' ghante' + (sm ? ' ' + sm + ' min' : '') + (sleepDur < 420 ? ' — 7 ghante se kam hai, thodi aur neend lo.' : ' — theek hai.') + '</div></section>';
+
+  // prayers
+  h += '<section class="card"><div class="hd"><h3>🕌 Namaz ke alarm</h3></div><p class="muted small" style="margin:0 0 6px">Apne mehfil/masjid ke hisaab se time khud set karo. Zuhr + Asr ka ek hi alarm hai. Jitne chaho add karo.</p>';
+  S.prayers.forEach(p => {
+    h += '<div class="prayer"><div class="r1"><input type="text" value="' + esc(p.name) + '" data-set="p.name" data-id="' + p.id + '">' + sw('p.on', p.on, 'data-id="' + p.id + '"') + '</div>' +
+      '<div class="row between" style="margin-top:8px"><input type="time" value="' + p.time + '" data-set="p.time" data-id="' + p.id + '"><button class="link" style="color:var(--red)" data-act="delPrayer" data-id="' + p.id + '">🗑 Hatao</button></div></div>';
+  });
+  h += '<button class="btn block" style="margin-top:10px" data-act="addPrayer">+ Naya namaz alarm</button></section>';
+
+  // routine
+  h += '<section class="card"><div class="hd"><h3>☀️ Subah ka routine</h3></div><p class="muted small" style="margin:0 0 6px">Uthne ke baad app yeh steps ek ek karke batayegi, phir "aaj ka plan" poochegi.</p>';
+  S.routine.forEach((s, i) => { h += '<div class="step"><b>' + (i + 1) + '</b><span>' + esc(s) + '</span><button class="ico" data-act="editStep" data-i="' + i + '">✎</button><button class="ico" data-act="delStep" data-i="' + i + '">🗑</button></div>'; });
+  h += '<button class="btn block" style="margin-top:10px" data-act="addStep">+ Naya step</button></section>';
+
+  h += '<section class="card"><div class="hd"><h3>🔊 Awaaz</h3></div><p class="muted small" style="margin:0 0 6px">Har cheez ke liye awaaz chuno: app ki, phone ki default, ya apni mp3 (jaise azan).</p>';
+  Object.keys(SND).forEach(k => {
+    const c = sndCfg(k);
+    h += '<div class="set-row" style="display:block"><div class="lbl">' + SND[k].n + (c.m === 'custom' ? '<small>' + esc(c.name) + '</small>' : '') + '</div><div class="row" style="margin-top:8px"><select data-set="snd.' + k + '" style="flex:1">' + [['app', 'App ki awaaz'], ['default', 'Phone ki default'], ['custom', 'Apni mp3 / ringtone']].map(o => '<option value="' + o[0] + '" ' + (c.m === o[0] ? 'selected' : '') + '>' + o[1] + '</option>').join('') + '</select>' + (c.m === 'custom' ? '<button class="btn" data-act="sndPick" data-k="' + k + '">Badlo</button>' : '') + '<button class="btn" data-act="sndTest" data-k="' + k + '">Test</button></div></div>';
+  });
+  h += '</section>';
+
+  h += '<section class="card"><div class="hd"><h3>⏰ Alarm</h3></div><div class="set-row"><div class="lbl">Alarm kitni der bajay<small>Namaz aur jagne ka alarm. Volume ya power button dabane par band ho jata hai.</small></div><select data-set="ringSec">' + [15, 30, 45, 60].map(v => '<option value="' + v + '" ' + ((state.settings.ringSec || 30) === v ? 'selected' : '') + '>' + v + ' second</option>').join('') + '</select></div>' +
+    (NATIVE ? '<div class="note ' + (permInfo.bat ? 'ok-note' : '') + '" style="margin-top:10px">' + (permInfo.bat ? 'Battery: Unrestricted ✓ — app band hone par bhi alarm bajne chahiye.' : 'Battery abhi restricted hai. Phone app band karte hi alarm rok deta hai. Neeche wala button dabao aur Allow karo.') + '<br><small>Xiaomi / Oppo / Vivo / Infinix / Tecno / Samsung mein App settings → Autostart (ya Auto-launch) ON karo, aur Recent apps mein app ko lock karo. App ko Force Stop mat karna.</small></div><div class="row" style="margin-top:10px"><button class="btn block" data-act="battery">Battery Unrestricted karo</button><button class="btn block" data-act="appSet">App settings</button></div>' : '') + '</section>';
+
+  h += '<section class="card"><div class="hd"><h3>💾 Data Backup</h3></div><p class="muted small" style="margin:0 0 8px">Aapka sara data (kaam, aadatein, pani, exercise, settings) apne aap is file mein save hota rehta hai:<br><b>Documents/DailyOps/dailyops-backup.json</b><br>Last backup: ' + (localStorage.getItem('bkAt') ? new Date(+localStorage.getItem('bkAt')).toLocaleString('en-GB') : 'abhi nahi') + '</p>' +
+    (BK ? '<div class="row"><button class="btn block" data-act="bkNow">Abhi backup lo</button><button class="btn block" data-act="bkRestore">Backup se wapas lo</button></div><button class="btn block" style="margin-top:8px" data-act="bkImport">Koi aur backup file chuno</button>' : '<div class="note">Backup sirf installed app mein chalta hai.</div>') + '</section>';
+
+  // notifications
+  const permTxt = NATIVE
+    ? (permInfo.notif === 'granted' ? '✅ Notification allowed' : '❌ Notification allowed nahi') + ' · ' + (permInfo.exact === 'granted' ? '✅ Exact alarm allowed' : permInfo.exact === 'unknown' ? '' : '❌ Exact alarm allowed nahi')
+    : '';
+  h += '<section class="card"><div class="hd"><h3>🔔 Alarm check</h3></div>' +
+    (NATIVE
+      ? '<div class="note ' + (permInfo.notif === 'granted' && permInfo.exact !== 'denied' ? 'ok-note' : '') + '">' + permTxt + '<br>Set kiye hue alarms: ' + schedInfo.n + (schedInfo.err ? '<br>Error: ' + esc(schedInfo.err) : '') + '</div>'
+      : '<div class="note">Yeh browser mode hai: alarm sirf tab bajenge jab yeh page khula ho. APK install karne par band phone mein bhi alarm bajenge.</div>') +
+    '<div class="row" style="margin-top:12px"><button class="btn block" data-act="perms">Permission do</button><button class="btn block" data-act="test">Test alarm (5 sec)</button></div>' +
+    '<p class="muted small" style="margin:12px 0 0">💡 Alarm pakka bajne ke liye: Phone Settings → Apps → Daily Ops → Battery → <b>Unrestricted / No restrictions</b>. (Xiaomi/Oppo/Vivo/Infinix mein "Autostart" bhi on karo.)</p></section>';
+
+  h += '<section class="card"><button class="btn danger block" data-act="resetAll">🗑 Sab data reset karo</button></section>';
+  return h;
+}
+
+function render(){
+  const main = $('#main');
+  main.innerHTML = page === 'home' ? pageHome() : page === 'water' ? pageWater() : page === 'ex' ? pageEx() : page === 'tasks' ? pageTasks() : pageSettings();
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.p === page));
+}
+function go(p){ page = p; if (p === 'ex') exSel = null; if (p === 'settings') alStatus(); render(); window.scrollTo(0, 0); }
+
+/* ---------------- exercise ---------------- */
+const EXD = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+let exSel = null, restTimer = null, restEnd = 0;
+function defPlan(){
+  const E = (n, s, r, rest, tip) => ({ id: uid(), n: n, s: s, r: r, rest: rest, tip: tip || '' });
+  const D = (title, icon, goal, exs) => ({ title: title, icon: icon, goal: goal, rest: false, exs: exs });
+  return [
+    { title: 'Aaram + Stretching', icon: '🧘', goal: 'Jism ko recover hone do — halki walk aur stretching', rest: true, exs: [E('Halki walk', 1, '20 min', 0, 'Aaram se chalo'), E('Full body stretching', 1, '10 min', 0, 'Har stretch 30 second rokiye')] },
+    D('Chest + Triceps', '💪', 'Push day: seena aur triceps thaka do', [E('Push-ups', 4, '12-15', 60, 'Seena zameen ke qareeb tak le jao'), E('Wide push-ups', 3, '10-12', 60, 'Haath kandhon se chaude'), E('Feet-elevated push-ups', 3, '8-12', 60, 'Pair kursi par — upar ke seene ke liye'), E('Diamond push-ups', 3, '8-10', 60, 'Triceps par zor'), E('Chair dips', 3, '12-15', 60, 'Kamar kursi ke qareeb rakho')]),
+    D('Back + Biceps', '🦾', 'Pull day: peeth aur biceps', [E('Pull-ups (agar bar ho)', 4, 'Max', 90, 'Bar na ho to agla exercise karo'), E('Inverted rows (table ke neeche)', 4, '10-12', 75, 'Mazboot table ke neeche let kar khud ko upar kheencho'), E('Superman hold', 3, '12 (2s hold)', 45, 'Peeth ke muscles dabao'), E('Reverse snow angels', 3, '12', 45, 'Ulta let kar haath aage se peeche'), E('Bag / bottle curls', 4, '12', 60, 'Kohni jism ke saath chipki rahe'), E('Hammer curls', 3, '12', 60)]),
+    D('Legs 1 — Quads', '🦵', 'Raanon (quads) ka din', [E('Squats', 4, '20', 60, 'Kamar seedhi, ghutne pair ki seedh mein'), E('Bulgarian split squat', 3, '10 har taraf', 75, 'Peeche wala pair kursi par'), E('Jump squats', 3, '12', 60), E('Wall sit', 3, '45s', 45), E('Calf raises', 4, '20', 30, 'Upar 1 second ruko')]),
+    D('Shoulders + Abs', '🏋️', 'Kandhe aur pet', [E('Pike push-ups', 4, '8-12', 60, 'Kamar upar, sar zameen ki taraf'), E('Lateral raises (bottle)', 3, '15', 45), E('Front raises (bottle)', 3, '12', 45), E('Crunches', 3, '20', 30), E('Leg raises', 3, '15', 30, 'Kamar zameen se chipki'), E('Plank', 3, '45s', 30)]),
+    D('Legs 2 — Hamstring + Glutes', '🍑', 'Peeche ki raan aur glutes', [E('Lunges', 3, '12 har taraf', 60), E('Glute bridge', 4, '15', 45, 'Upar 2 second dabao'), E('Single-leg deadlift', 3, '10 har taraf', 60, 'Balance banao, peeth seedhi'), E('Sumo squat', 3, '15', 60), E('Calf raises', 3, '25', 30)]),
+    D('Cardio + Core', '🏃', 'Stamina aur core', [E('Running', 1, '20-30 min', 0, 'Pehle 5 min halki daud'), E('Mountain climbers', 3, '30s', 30), E('Burpees', 3, '10', 45), E('Bicycle crunch', 3, '20', 30), E('Plank', 3, '60s', 30)])
+  ];
+}
+function exPlan(){ const X = state.ex; if (!X.plan || X.plan.length !== 7) X.plan = defPlan(); return X.plan; }
+function todayIdx(){ const p = state.day.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]).getDay(); }
+function dk(off){ const p = state.day.split('-').map(Number), d = new Date(p[0], p[1] - 1, p[2] + off); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function exLog(){ const L = state.ex.log; if (!L[state.day]) L[state.day] = { sets: {}, done: false }; return L[state.day]; }
+function exProg(pl){ const l = state.ex.log[state.day], s = (l && l.sets) || {}; let a = 0, b = 0; pl.exs.forEach(x => { b += x.s; a += Math.min(s[x.id] || 0, x.s); }); return [a, b]; }
+function exStreak(){ const L = state.ex.log; let n = 0, i = (L[dk(0)] && L[dk(0)].done) ? 0 : -1; while (L[dk(i)] && L[dk(i)].done) { n++; i--; } return n; }
+function startRest(sec){
+  clearInterval(restTimer); restEnd = Date.now() + sec * 1000; $('#rest').classList.remove('hide');
+  const upd = () => { const r = Math.ceil((restEnd - Date.now()) / 1000); if (r <= 0) { stopRest(); beepOnce(); try { if (navigator.vibrate) navigator.vibrate([300, 150, 300]); } catch (e) {} return; } $('#restT').textContent = '⏱ Aaram ' + r + 's'; };
+  upd(); restTimer = setInterval(upd, 500);
+}
+function stopRest(){ clearInterval(restTimer); $('#rest').classList.add('hide'); }
+function exHomeCard(){
+  const pl = exPlan()[todayIdx()], pr = exProg(pl), st = exStreak();
+  return '<section class="card"><div class="row between"><div><div class="eyebrow">💪 Aaj ki exercise</div><div class="big">' + esc(pl.title) + '</div><div class="muted small">' + (pr[1] && pr[0] >= pr[1] ? '✅ Poori ho gayi' : pr[0] + '/' + pr[1] + ' set') + (st ? ' · 🔥 ' + st + ' din streak' : '') + '</div></div><button class="link" data-act="go" data-p="ex">Kholo →</button></div></section>';
+}
+function pageEx(){
+  const X = state.ex, plan = exPlan(), T = todayIdx(); if (exSel === null) exSel = T;
+  const pl = plan[exSel], isT = exSel === T, l = (X.log[state.day] && X.log[state.day].sets) || {}, pr = exProg(pl), st = exStreak();
+  const off = i => (i === 0 ? 7 : i) - (T === 0 ? 7 : T);
+  let h = '<h1 class="page-title">💪 Exercise</h1><p class="sub">Hafte ke 7 din, har din alag muscles.' + (st ? ' 🔥 ' + st + ' din streak' : '') + '</p>';
+  h += '<div class="wk">' + [1, 2, 3, 4, 5, 6, 0].map(i => { const lg = X.log[dk(off(i))]; return '<button class="wd ' + (i === exSel ? 'on ' : '') + (i === T ? 'today' : '') + '" data-act="exDay" data-i="' + i + '"><b>' + EXD[i].slice(0, 3) + (lg && lg.done ? ' ✓' : '') + '</b><small>' + (plan[i].rest ? 'Rest' : esc(plan[i].title.split(/[ +]/)[0])) + '</small></button>'; }).join('') + '</div>';
+  h += '<section class="card now ' + (pl.rest ? 'sleep' : '') + '"><div class="eyebrow">' + EXD[exSel] + (isT ? ' · TODAY' : '') + '</div><div class="row between"><div class="big">' + esc(pl.title) + '</div><button class="ico" data-act="exCfg">✎</button></div><p class="muted small" style="margin:6px 0 0">🎯 ' + esc(pl.goal) + '</p><div class="prog" style="margin-top:12px"><i style="width:' + (pr[1] ? Math.round(pr[0] / pr[1] * 100) : 0) + '%"></i></div><div class="muted small">' + pr[0] + '/' + pr[1] + ' set poore' + (isT ? '' : ' · set sirf aaj ke din tick hote hain') + '</div></section>';
+  if (isT && pr[1] && pr[0] >= pr[1]) h += '<div class="note ok-note" style="margin:0 0 14px">🎉 Mashallah! Aaj ki exercise poori.</div>';
+  if (!pl.rest) h += '<div class="note" style="margin:0 0 14px">🔥 Pehle 5 min warm-up: arm circles, jumping jacks, leg swings. Aakhir mein 5 min stretching.</div>';
+  h += '<section class="card">' + pl.exs.map((x, j) => {
+    const n = l[x.id] || 0; let b = '';
+    for (let k = 1; k <= x.s; k++) b += '<button class="sb ' + (k <= n ? 'on' : '') + '" ' + (isT ? 'data-act="exSet" data-id="' + x.id + '" data-k="' + k + '"' : 'disabled') + '>' + k + '</button>';
+    return '<div class="exr"><div class="row between"><div><div class="exn">' + (j + 1) + '. ' + esc(x.n) + '</div><div class="muted small">' + x.s + ' × ' + esc(x.r) + (x.rest ? ' · aaram ' + x.rest + 's' : '') + '</div></div><div class="row"><button class="ico" data-act="exEdit" data-id="' + x.id + '">✎</button><button class="ico" data-act="exDel" data-id="' + x.id + '">🗑</button></div></div>' + (x.tip ? '<div class="muted small" style="margin:4px 0">💡 ' + esc(x.tip) + '</div>' : '') + '<div class="sets">' + b + '</div></div>';
+  }).join('') + '<button class="btn block" style="margin-top:10px" data-act="exAdd">+ Exercise add karo</button></section>';
+  h += '<section class="card"><div class="hd"><h3>🔔 Exercise reminder</h3></div><div class="set-row"><div class="lbl">Roz yaad dilao<small>Aaram ke din reminder nahi aata</small></div>' + sw('exOn', X.on) + '</div><div class="set-row"><div class="lbl">Time</div><input type="time" value="' + X.time + '" data-set="exTime"></div><button class="btn danger block" style="margin-top:8px" data-act="exReset">Plan default par wapas</button></section>';
+  return h;
+}
+function exForm(x, cb){
+  openSheet('<h3>' + (x.n ? 'Exercise badlo' : 'Naya exercise') + '</h3><input id="fN" placeholder="Naam (jaise Push-ups)" value="' + esc(x.n) + '"><div class="row"><input id="fS" type="number" inputmode="numeric" value="' + x.s + '" style="width:90px"><input id="fR" placeholder="Reps (12 ya 30s)" value="' + esc(x.r) + '"></div><input id="fRest" type="number" inputmode="numeric" placeholder="Aaram (second)" value="' + x.rest + '" style="width:100%"><input id="fT" placeholder="Tip (optional)" value="' + esc(x.tip) + '"><div class="btns"><button class="btn" data-act="closeSheet">Cancel</button><button class="btn primary" id="fOk">Save</button></div>');
+  $('#fOk').onclick = () => { const n = $('#fN').value.trim(); if (!n) return; x.n = n; x.s = clamp(Math.round(+$('#fS').value) || 3, 1, 10); x.r = $('#fR').value.trim() || '10'; x.rest = clamp(Math.round(+$('#fRest').value) || 0, 0, 300); x.tip = $('#fT').value.trim(); closeSheet(); cb(x); };
+}
+
+/* ---------------- actions ---------------- */
+function findItem(list, id){ return state[list].find(t => t.id === id); }
+const acts = {
+  go: el => go(el.dataset.p),
+  closeSheet: () => closeSheet(),
+  alarmOff: () => alarmOff(),
+  drink: () => {
+    const w = wd(); w.ml += state.settings.cup; w.log.push({ t: Date.now(), ml: state.settings.cup });
+    try { if (navigator.vibrate) navigator.vibrate(35); } catch (e) {}
+    save(); render(); sched();
+    const b = $('#cupBtn'); if (b) b.classList.add('pop');
+  },
+  undo: () => { const w = wd(); const l = w.log.pop(); if (l) { w.ml = Math.max(0, w.ml - l.ml); save(); render(); sched(); } },
+  history: () => openHistory(),
+  stepDone: () => {
+    const R = state.routine; R.idx++;
+    if (R.idx >= state.settings.routine.length) { R.done = true; save(); render(); openPlan(); }
+    else { save(); render(); }
+  },
+  skipRoutine: () => { state.routine.done = true; save(); render(); },
+  plan: () => openPlan(),
+  toggle: el => { const t = findItem(el.dataset.list, el.dataset.id); if (t) { t.checked = !t.checked; save(); render(); } },
+  edit: async el => { const t = findItem(el.dataset.list, el.dataset.id); if (!t) return; const v = await askText('Badlo', t.text); if (v) { t.text = v; save(); render(); } },
+  del: async el => { if (await askConfirm('Yeh hata dun?')) { state[el.dataset.list] = state[el.dataset.list].filter(t => t.id !== el.dataset.id); save(); render(); } },
+  saveAudit: () => {
+    const win = state.win.trim(), leak = state.leak.trim();
+    if (!win && !leak) return;
+    state.audits.unshift({ date: new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }), win, leak });
+    state.audits = state.audits.slice(0, 30); state.win = ''; state.leak = ''; save(); render();
+  },
+  delAudit: el => { state.audits.splice(+el.dataset.i, 1); save(); render(); },
+  cup: el => { state.settings.cup = +el.dataset.v; save(); render(); sched(); },
+  addPrayer: async () => { const n = await askText('Alarm ka naam', '', 'jaise: Namaz-e-Shab'); if (n) { state.settings.prayers.push({ id: uid(), name: n, time: '12:00', on: true }); save(); render(); sched(); } },
+  delPrayer: async el => { if (await askConfirm('Yeh alarm hata dun?')) { state.settings.prayers = state.settings.prayers.filter(p => p.id !== el.dataset.id); save(); render(); sched(); } },
+  addStep: async () => { const v = await askText('Naya step', '', 'jaise: Naha kar tayyar ho'); if (v) { state.settings.routine.push(v); save(); render(); } },
+  editStep: async el => { const i = +el.dataset.i; const v = await askText('Step badlo', state.settings.routine[i]); if (v) { state.settings.routine[i] = v; save(); render(); } },
+  delStep: async el => { if (await askConfirm('Yeh step hata dun?')) { state.settings.routine.splice(+el.dataset.i, 1); state.routine.idx = 0; save(); render(); } },
+  wAdd: async () => { const n = Math.round(+(await askText('Kitna pani piya (ml)?', '', 'jaise 350'))); if (n > 0 && n <= 3000) { const w = wd(); w.ml += n; w.log.push({ t: Date.now(), ml: n }); save(); render(); sched(); } },
+  wTarget: () => { state.settings.target = clamp(Math.round(state.settings.weight * 35 / 50) * 50, 500, 10000); save(); render(); sched(); },
+  hAdd: () => taskForm({ id: uid(), text: '', checked: false, rem: null, log: {} }, 'habit', o => { state.habits.push(o); save(); render(); sched(); }),
+  tAddImp: () => taskForm({ id: uid(), text: '', pri: 'imp', done: false, rep: false, rem: null }, 'task', o => { state.tasks.push(o); save(); render(); sched(); }),
+  tAddNorm: () => taskForm({ id: uid(), text: '', pri: 'norm', done: false, rep: false, rem: null }, 'task', o => { state.tasks.push(o); save(); render(); sched(); }),
+  tTog: el => { const t = state.tasks.find(x => x.id === el.dataset.id); if (t) { t.done = !t.done; save(); render(); sched(); } },
+  hTog: el => { const x = state.habits.find(y => y.id === el.dataset.id); if (x) { x.checked = !x.checked; if (x.checked) x.log[state.day] = 1; else delete x.log[state.day]; save(); render(); sched(); } },
+  tEdit: el => { const t = state.tasks.find(x => x.id === el.dataset.id); if (t) taskForm(t, 'task', () => { save(); render(); sched(); }); },
+  hEdit: el => { const x = state.habits.find(y => y.id === el.dataset.id); if (x) taskForm(x, 'habit', () => { save(); render(); sched(); }); },
+  tDel: async el => { if (await askConfirm('Yeh kaam hata dun?')) { state.tasks = state.tasks.filter(x => x.id !== el.dataset.id); save(); render(); sched(); } },
+  hDel: async el => { if (await askConfirm('Yeh aadat hata dun?')) { state.habits = state.habits.filter(x => x.id !== el.dataset.id); save(); render(); sched(); } },
+  sndPick: el => sndMode(el.dataset.k, 'custom'),
+  sndTest: async el => {
+    const k = el.dataset.k; if (!NATIVE) { beepOnce(); return; }
+    try { await ensureChannels(); await ensurePerms(true); const it = { id: 98, title: 'Test: ' + SND[k].n, body: 'Awaaz check', cid: chId(k), snd: sndSpec(k), ring: SND[k].alarm ? (state.settings.ringSec || 30) : 0 }; if (AL) await AL.test({ delay: 4, item: it }); } catch (e) {}
+  },
+  battery: async () => { if (AL) { try { await AL.battery(); } catch (e) {} setTimeout(alStatus, 1500); } },
+  appSet: () => { if (AL) AL.appSettings(); },
+  barTip: el => { const s = el.closest('section'), t = s && s.querySelector('.tip'); if (t) t.textContent = el.dataset.t; },
+  bkNow: async () => { const ok = await bkNow(true); render(); info(ok ? 'Backup ho gaya' : 'Backup nahi hua', ok ? 'Data Documents/DailyOps/dailyops-backup.json mein save hai.' : 'Storage mein likh nahi saka. Dobara koshish karo.'); },
+  bkRestore: async () => { if (!(await askConfirm('Backup file se data wapas laun? Abhi ka data badal jayega.'))) return; let r = null; try { r = await BK.loadBackup(); } catch (e) {} const ok = r && r.data && await bkApply(r.data); info(ok ? 'Data wapas aa gaya' : 'Backup nahi mila', ok ? 'Sab kuch pehle jaisa ho gaya.' : 'Is phone par backup file nahi mili. Neeche se "Koi aur backup file chuno" try karo.'); },
+  bkImport: async () => { let r = null; try { r = await BK.importFile(); } catch (e) { return; } if (!(await askConfirm('Is file se data laun? Abhi ka data badal jayega.'))) return; const ok = r && r.data && await bkApply(r.data); info(ok ? 'Data wapas aa gaya' : 'File sahi nahi hai', ok ? 'Sab kuch pehle jaisa ho gaya.' : 'Yeh Daily Ops ki backup file nahi lagti.'); },
+  restStop: () => stopRest(),
+  exDay: el => { exSel = +el.dataset.i; render(); },
+  exSet: el => {
+    const pl = exPlan()[todayIdx()], x = pl.exs.find(e => e.id === el.dataset.id); if (!x) return;
+    const L = exLog(), k = +el.dataset.k, was = L.sets[x.id] || 0;
+    L.sets[x.id] = (k === was) ? k - 1 : k;
+    const pr = exProg(pl); L.done = pr[1] > 0 && pr[0] >= pr[1];
+    save(); if (L.sets[x.id] > was && x.rest && !L.done) startRest(x.rest); if (L.done) stopRest(); render();
+  },
+  exAdd: () => exForm({ n: '', s: 3, r: '12', rest: 60, tip: '' }, x => { x.id = uid(); exPlan()[exSel].exs.push(x); save(); render(); }),
+  exEdit: el => { const x = exPlan()[exSel].exs.find(e => e.id === el.dataset.id); if (x) exForm(x, () => { save(); render(); }); },
+  exDel: async el => { if (await askConfirm('Yeh exercise hata dun?')) { const p = exPlan()[exSel]; p.exs = p.exs.filter(e => e.id !== el.dataset.id); save(); render(); } },
+  exCfg: () => {
+    const p = exPlan()[exSel];
+    openSheet('<h3>Din ka naam / target</h3><input id="cT" value="' + esc(p.title) + '"><input id="cG" value="' + esc(p.goal) + '"><label class="row" style="margin-top:12px"><input id="cR" type="checkbox" style="width:22px;height:22px;padding:0" ' + (p.rest ? 'checked' : '') + '> Aaram ka din (reminder nahi aayega)</label><div class="btns"><button class="btn" data-act="closeSheet">Cancel</button><button class="btn primary" id="cOk">Save</button></div>');
+    $('#cOk').onclick = () => { p.title = $('#cT').value.trim() || p.title; p.goal = $('#cG').value.trim() || p.goal; p.rest = $('#cR').checked; save(); closeSheet(); render(); sched(); };
+  },
+  exReset: async () => { if (await askConfirm('Exercise plan default par le jaun?')) { state.ex.plan = defPlan(); save(); render(); sched(); } },
+  perms: async () => {
+    if (NATIVE) { await ensurePerms('force'); sched(); render(); }
+    else if ('Notification' in window) { try { await Notification.requestPermission(); } catch (e) {} showAlarm('🔔 Test', 'Notification permission check', false); }
+  },
+  test: async () => {
+    if (!NATIVE) { setTimeout(() => showAlarm('🕌 Test alarm', 'Yeh alarm ka test hai. Sab theek hai!', true), 5000); return; }
+    try {
+      await ensureChannels(); await ensurePerms(true);
+      if (AL) await AL.test({ delay: 4, item: { id: 99, title: '⏰ Test alarm', body: 'Yeh alarm ka test hai. Sab theek hai!', cid: chId('alarm'), snd: sndSpec('alarm'), ring: state.settings.ringSec || 30 } });
+      else await LN.schedule({ notifications: [{ id: 999999, title: '⏰ Test alarm', body: 'Yeh alarm ka test hai.', schedule: { at: new Date(Date.now() + 5000), allowWhileIdle: true }, channelId: chId('alarm'), smallIcon: 'ic_stat_icon' }] });
+      openSheet('<h3>⏰ 5 second mein test alarm aayega</h3><p class="sub">App band kar ke ya screen lock kar ke bhi check kar sakte ho.</p><div class="btns"><button class="btn primary" data-act="closeSheet">Theek hai</button></div>');
+    } catch (e) { openSheet('<h3>Test fail hua</h3><p class="sub">' + esc(String((e && e.message) || e)) + '</p><div class="btns"><button class="btn" data-act="closeSheet">Band karo</button></div>'); }
+  },
+  resetAll: async () => {
+    if (await askConfirm('Sab data (kaam, pani, settings) mehfooz hata dun?')) {
+      try { localStorage.removeItem(KEY); } catch (e) {}
+      state = defaults(); state.day = dayKey(); state.routine.day = state.day; save(); render(); sched();
+    }
+  }
+};
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if (!el) return;
+  const f = acts[el.dataset.act];
+  if (f) f(el);
+});
+document.addEventListener('submit', e => {
+  const f = e.target.closest('form.add');
+  if (!f) return;
+  e.preventDefault();
+  const inp = f.querySelector('input'), v = inp.value.trim();
+  if (!v) return;
+  state[f.dataset.list].push({ id: uid(), text: v, checked: false });
+  save(); render();
+  const again = document.querySelector('form.add[data-list="' + f.dataset.list + '"] input');
+  if (again) again.focus();
+});
+document.addEventListener('input', e => {
+  const a = e.target.dataset && e.target.dataset.audit;
+  if (a) { state[a] = e.target.value; save(); }
+});
+document.addEventListener('change', e => {
+  const el = e.target, k = el.dataset && el.dataset.set;
+  if (!k) return;
+  const S = state.settings;
+  if (k.indexOf('snd.') === 0) { sndMode(k.slice(4), el.value); return; }
+  switch (k) {
+    case 'ringSec': S.ringSec = clamp(+el.value || 30, 5, 120); break;
+    case 'weight': S.weight = clamp(Math.round(+el.value) || 0, 0, 300); break;
+    case 'cup': S.cup = clamp(Math.round(+el.value) || 200, 10, 2000); break;
+    case 'target': S.target = clamp(Math.round(+el.value) || 2500, 500, 10000); break;
+    case 'waterOn': S.waterOn = el.checked; break;
+    case 'waterEvery': S.waterEvery = +el.value; break;
+    case 'wake': if (el.value) S.wake = el.value; break;
+    case 'sleep': if (el.value) S.sleep = el.value; break;
+    case 'wakeOn': S.wakeOn = el.checked; break;
+    case 'sleepOn': S.sleepOn = el.checked; break;
+    case 'exOn': state.ex.on = el.checked; break;
+    case 'exTime': if (el.value) state.ex.time = el.value; break;
+    case 'p.name': case 'p.time': case 'p.on': {
+      const p = S.prayers.find(x => x.id === el.dataset.id);
+      if (p) { if (k === 'p.name') p.name = el.value.trim() || p.name; if (k === 'p.time' && el.value) p.time = el.value; if (k === 'p.on') p.on = el.checked; }
+      break;
+    }
+  }
+  save(); render(); sched();
+});
+
+/* ---------------- lifecycle ---------------- */
+function tick(){
+  const changed = rollover();
+  if (!NATIVE) webTick();
+  if (page === 'home' && !isSheetOpen() && !$('#alarm').classList.contains('open')) render();
+  if (changed) sched();
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { rollover(); render(); sched(); } });
+
+async function init(){
+  if (FRESH && BK) { try { const r = await BK.loadBackup(); if (r && r.data) await bkApply(r.data); } catch (e) {} }
+  document.addEventListener('visibilitychange', () => { if (document.hidden) bkNow(); });
+  render();
+  if (NATIVE && LN) {
+    try { await ensureChannels(); await ensurePerms(true); } catch (e) {}
+    try { LN.addListener('localNotificationActionPerformed', () => { rollover(); go('home'); }); } catch (e) {}
+  } else if (!NATIVE && 'Notification' in window && Notification.permission === 'default') {
+    try { Notification.requestPermission(); } catch (e) {}
+  }
+  sched();
+  setInterval(tick, NATIVE ? 30000 : 5000);
+  if (NATIVE) render();
+}
+window.__dailyOps = { buildPlan: buildPlan, getState: () => state };
+init();
+})();
+</script>
+</body>
+</html>
